@@ -1,0 +1,7 @@
+plugins:
+  isbf_alumni_enabled:
+    default: true
+    client: true
+  isbf_alumni_group_name:
+    default: alumni
+    type: string
