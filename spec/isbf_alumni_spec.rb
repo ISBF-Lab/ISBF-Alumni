@@ -47,6 +47,18 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
     )
   end
 
+  it "keeps Hong Kong and Macau separate from Guangdong" do
+    china = IsbfAlumni::Geography.country("CN")
+    hong_kong = IsbfAlumni::Geography.region(china, "HK")
+    macau = IsbfAlumni::Geography.region(china, "MO")
+    guangdong = IsbfAlumni::Geography.region(china, "GD")
+
+    expect(hong_kong).to include("name" => "香港特别行政区")
+    expect(macau).to include("name" => "澳门特别行政区")
+    expect(IsbfAlumni::Geography.city(hong_kong, "HK")).to include("name" => "香港")
+    expect(IsbfAlumni::Geography.city(macau, "MO")).to include("name" => "澳门")
+    expect(IsbfAlumni::Geography.city(guangdong, "HK")).to be_nil
+  end
   it "returns only visible alumni profiles while allowing ordinary logged-in users to browse" do
     sign_in(viewer)
     get "/isbf/alumni/directory.json"

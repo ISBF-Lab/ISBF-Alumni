@@ -43,7 +43,7 @@ CITIES = [
     ("XZ", "LS", "\u62c9\u8428", 29.6520, 91.1721), ("SN", "XA", "\u897f\u5b89", 34.3416, 108.9398),
     ("GS", "LZ", "\u5170\u5dde", 36.0611, 103.8343), ("QH", "XN", "\u897f\u5b81", 36.6171, 101.7782),
     ("NX", "YC", "\u94f6\u5ddd", 38.4872, 106.2309), ("XJ", "URC", "\u4e4c\u9c81\u6728\u9f50", 43.8256, 87.6168),
-    ("GD", "HK", "\u9999\u6e2f", 22.3193, 114.1694), ("GD", "MO", "\u6fb3\u95e8", 22.1987, 113.5439)
+    ("HK", "HK", "\u9999\u6e2f", 22.3193, 114.1694), ("MO", "MO", "\u6fb3\u95e8", 22.1987, 113.5439)
 ]
 
 def ensure_sources():
@@ -185,6 +185,10 @@ def main():
             {"code": item["properties"]["code"], "name": item["properties"]["name"], "cities": []}
             for item in features
         ]
+    region_catalog["CN"].extend([
+        {"code": "HK", "name": "\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a", "cities": []},
+        {"code": "MO", "name": "\u6fb3\u95e8\u7279\u522b\u884c\u653f\u533a", "cities": []},
+    ])
     by_region = {
         code: {region["code"]: region for region in regions}
         for code, regions in region_catalog.items()
