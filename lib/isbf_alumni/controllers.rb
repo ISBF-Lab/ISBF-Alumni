@@ -129,6 +129,7 @@ module IsbfAlumni
       response.headers["Cache-Control"] = "private, max-age=3600"
       response.headers["X-Content-Type-Options"] = "nosniff"
       send_file path, type: content_type, disposition: "inline"
+      response.headers["Content-Type"] = content_type
     end
   end
 end

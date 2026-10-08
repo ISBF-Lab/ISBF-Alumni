@@ -30,7 +30,8 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
 
   it "requires a logged-in session for the directory" do
     get "/isbf/alumni/directory.json"
-    expect(response).to redirect_to("/login")
+    expect(response.status).to eq(403), response.body
+    expect(response.parsed_body).to include("error_type" => "not_logged_in")
   end
 
   it "advertises the capability only when the native alumni group exists" do
@@ -97,7 +98,7 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
     }
     expect(response.status).to eq(200), response.body
     expect(response.parsed_body).to include("display_name" => "校友显示名", "region_code" => "JS", "city_code" => "SZ", "visible" => false)
-    expect(member.custom_fields[IsbfAlumni::VISIBLE_FIELD]).to eq("false")
+    expect(member.reload.custom_fields[IsbfAlumni::VISIBLE_FIELD]).to eq("false")
     expect(member.reload.username).not_to eq(viewer.username)
     expect(member.admin?).to eq(false)
   end

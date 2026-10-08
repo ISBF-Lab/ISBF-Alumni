@@ -29,7 +29,7 @@ after_initialize do
   IsbfAlumni::Engine.routes.draw do
     get "/" => "alumni#page"
     get "/geography" => "alumni#geography"
-    get "/geography/world.geojson" => "alumni#world"
+    get "/geography/world.geojson" => "alumni#world", format: false
     get "/geography/regions/:country.geojson" => "alumni#regions", constraints: { country: /[A-Z]{2}/ }, format: false
     get "/vendor/leaflet.js" => "alumni#leaflet_js"
     get "/vendor/leaflet.css" => "alumni#leaflet_css"
