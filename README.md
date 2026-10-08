@@ -18,6 +18,10 @@ Profile fields are stored in native UserCustomField records. They are not regist
 
 The plugin uses the native Group and GroupUser membership model, Discourse sessions and CSRF handling, and adds no database tables or Core patches.
 
+## Deployment
+
+Release only a merged Git commit. Place its tracked source under `/shared/isbf-alumni-releases/<commit>/isbf-alumni` with a matching `.release-commit` file, then use `deploy/install-plugin.sh <commit>` in the container's existing plugin hook. The installer accepts the expected symlink or creates it when the plugin path is absent; it refuses to replace another installation. Keep database, active theme and service configuration rollback points before enabling the plugin and updating the theme.
+
 ## Map assets
 
 Map boundaries are generated from Natural Earth country and Admin 1 data. Natural Earth data is public domain. The Admin 1 source is queried from the Natural Earth Quick Start ArcGIS service and filtered to China, the United States, Canada, the United Kingdom, Australia, Japan, Germany, and France. The generated world and region GeoJSON is simplified and served by authenticated same-origin plugin routes.
