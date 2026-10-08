@@ -126,10 +126,9 @@ module IsbfAlumni
     end
 
     def send_static_asset(path, content_type)
+      render body: File.binread(path), content_type: content_type
       response.headers["Cache-Control"] = "private, max-age=3600"
       response.headers["X-Content-Type-Options"] = "nosniff"
-      send_file path, type: content_type, disposition: "inline"
-      response.headers["Content-Type"] = content_type
     end
   end
 end

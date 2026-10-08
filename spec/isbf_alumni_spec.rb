@@ -134,6 +134,7 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
 
     get "/isbf/alumni/geography/regions/CN.geojson"
     expect(response.status).to eq(200), response.body
+    expect(response.media_type).to eq("application/json")
     expect(response.body).to include('"code":"GD"')
   end
 end
