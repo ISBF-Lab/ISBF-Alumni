@@ -13,6 +13,7 @@ jobs:
     uses: discourse/.github/.github/workflows/discourse-plugin.yml@main
     with:
       name: isbf-alumni
+      core_ref: 10004ccf5090d85f80da529aeb4ecb4f3b7b1205
       skip_linting: true
       skip_annotations: true
   syntax:
