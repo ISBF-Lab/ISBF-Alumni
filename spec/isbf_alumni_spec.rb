@@ -137,4 +137,31 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
     expect(response.media_type).to eq("application/json")
     expect(response.body).to include('"code":"GD"')
   end
+
+  it "serves local Leaflet assets without an XHR header" do
+    sign_in(viewer)
+
+    get "/isbf/alumni/vendor/leaflet.js"
+    expect(response.status).to eq(200), response.body
+    expect(response.media_type).to eq("application/javascript")
+    expect(response.body).to include("Leaflet")
+
+    get "/isbf/alumni/vendor/leaflet.css"
+    expect(response.status).to eq(200), response.body
+    expect(response.media_type).to eq("text/css")
+    expect(response.body).to include(".leaflet-container")
+
+    get "/isbf/alumni/vendor/leaflet/images/marker-icon.png"
+    expect(response.status).to eq(200), response.body
+    expect(response.media_type).to eq("image/png")
+    expect(response.body.b).to start_with("\x89PNG\r\n\x1A\n".b)
+  end
+
+  it "keeps map and Leaflet assets behind login" do
+    %w[geography/world.geojson vendor/leaflet.js].each do |asset|
+      get "/isbf/alumni/#{asset}"
+      expect(response.status).not_to eq(200)
+      expect(response.body).not_to include('"country_code":"CN"')
+    end
+  end
 end

@@ -10,6 +10,7 @@ module IsbfAlumni
     wrap_parameters false
     requires_login
     requires_plugin "isbf-alumni"
+    skip_before_action :check_xhr, only: %i[page world regions leaflet_js leaflet_css leaflet_image]
     before_action :ensure_available!
 
     def page
@@ -126,7 +127,7 @@ module IsbfAlumni
     end
 
     def send_static_asset(path, content_type)
-      render body: File.binread(path), content_type: content_type
+      send_file path, type: content_type, disposition: "inline"
       response.headers["Cache-Control"] = "private, max-age=3600"
       response.headers["X-Content-Type-Options"] = "nosniff"
     end
