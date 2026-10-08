@@ -153,6 +153,7 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
     get "/isbf/alumni/vendor/leaflet.js"
     expect(response.status).to eq(200), response.body
     expect(response.media_type).to eq("application/javascript")
+    expect(response.headers["Cross-Origin-Resource-Policy"]).to eq("same-origin")
     expect(response.body).to include("Leaflet")
 
     get "/isbf/alumni/vendor/leaflet.css"
@@ -172,6 +173,12 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
       expect(response.status).not_to eq(200)
       expect(response.body).not_to include('"country_code":"CN"')
     end
+  end
+
+  it "rejects a cross-site request for the static map library" do
+    sign_in(viewer)
+    get "/isbf/alumni/vendor/leaflet.js", headers: { "Sec-Fetch-Site" => "cross-site" }
+    expect(response.status).to eq(403)
   end
 end
 

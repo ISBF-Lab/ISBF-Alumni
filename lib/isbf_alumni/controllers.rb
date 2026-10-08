@@ -11,6 +11,8 @@ module IsbfAlumni
     requires_login
     requires_plugin "isbf-alumni"
     skip_before_action :check_xhr, only: %i[page world regions leaflet_js leaflet_css leaflet_image]
+    # This action serves immutable library code, never account or profile data.
+    skip_after_action :verify_same_origin_request, only: :leaflet_js
     before_action :ensure_available!
 
     def page
@@ -32,6 +34,7 @@ module IsbfAlumni
     end
 
     def leaflet_js
+      raise Discourse::InvalidAccess if request.headers["Sec-Fetch-Site"] == "cross-site"
       send_vendor_asset("leaflet.js", "application/javascript")
     end
 
@@ -124,6 +127,7 @@ module IsbfAlumni
       send_file path, type: content_type, disposition: "inline"
       response.headers["Cache-Control"] = "private, max-age=3600"
       response.headers["X-Content-Type-Options"] = "nosniff"
+      response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     end
   end
 end
