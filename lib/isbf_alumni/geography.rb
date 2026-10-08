@@ -3,11 +3,27 @@
 module IsbfAlumni
   module Geography
     DATA_ROOT = File.expand_path("../../assets/geography", __dir__)
-    DETAILED_COUNTRY_CODES = %w[CN US CA GB AU JP DE FR].freeze
+    DETAILED_COUNTRY_CODES = %w[CN].freeze
 
     class << self
       def catalog
-        @catalog ||= JSON.parse(File.read(File.join(DATA_ROOT, "catalog.json"), encoding: "UTF-8"))
+        @catalog ||= begin
+          data = JSON.parse(File.read(File.join(DATA_ROOT, "catalog.json"), encoding: "UTF-8"))
+          data["countries"] = data.fetch("countries").map do |country|
+            result = country.slice("code", "name")
+            if country["code"] == "CN"
+              result["regions"] = country.fetch("regions").map do |region|
+                province = region.slice("code", "name")
+                if %w[HK MO].include?(region["code"])
+                  province["center"] = region.fetch("cities").first.slice("lat", "lng")
+                end
+                province
+              end
+            end
+            result
+          end
+          data
+        end
       end
 
       def countries
@@ -21,11 +37,6 @@ module IsbfAlumni
       def region(country, code)
         return nil if code.blank?
         Array(country&.fetch("regions", [])).find { |item| item["code"] == code.to_s.upcase }
-      end
-
-      def city(region, code)
-        return nil if code.blank?
-        Array(region&.fetch("cities", [])).find { |item| item["code"] == code.to_s.upcase }
       end
 
       def detailed_country_codes

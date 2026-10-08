@@ -24,7 +24,7 @@ Release only a merged Git commit. Place its tracked source under `/shared/isbf-a
 
 ## Map assets
 
-Map boundaries are generated from Natural Earth country and Admin 1 data. Natural Earth data is public domain. The Admin 1 source is queried from the Natural Earth Quick Start ArcGIS service and filtered to China, the United States, Canada, the United Kingdom, Australia, Japan, Germany, and France. The generated world and region GeoJSON is simplified and served by authenticated same-origin plugin routes.
+Map boundaries are generated from Natural Earth country and Admin 1 data. Natural Earth data is public domain. The published catalog and map show province-level regions only for China; other countries expose country names only. The source archive includes additional Admin 1 data, but those regions and city fields are not exposed by the plugin. The generated world and region GeoJSON is simplified and served by authenticated same-origin plugin routes.
 
 Leaflet 1.9.4 is vendored locally under assets/vendor/leaflet under its BSD 2-Clause license. The map uses no external tile service.
 

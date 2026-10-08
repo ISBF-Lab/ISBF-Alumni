@@ -50,7 +50,6 @@ module IsbfAlumni
       RateLimiter.new(current_user, "isbf-alumni-directory", 90, 1.minute).performed!
       country = code_param(:country, /\A[A-Z]{2}\z/)
       region = code_param(:region, /\A[A-Z0-9]{1,3}\z/)
-      city = code_param(:city, /\A[A-Z0-9]{1,5}\z/)
       page_number = params[:page].presence || "1"
       raise Discourse::InvalidParameters.new("page") unless page_number.to_s.match?(/\A[1-9]\d{0,3}\z/)
       page_number = page_number.to_i
@@ -66,14 +65,9 @@ module IsbfAlumni
         selected_region = Geography.region(selected_country, region)
         raise Discourse::InvalidParameters.new("region") unless selected_region
       end
-      if city.present?
-        raise Discourse::InvalidParameters.new("city") unless Geography.city(selected_region, city)
-      end
-
       users, has_more = IsbfAlumni.directory(
         country_code: country,
         region_code: region,
-        city_code: city,
         page: page_number,
       )
       render json: { users: users, page: page_number, has_more: has_more }

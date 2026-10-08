@@ -6,12 +6,11 @@ module IsbfAlumni
   GROUP_NAME_SETTING = :isbf_alumni_group_name
   DEFAULT_GROUP_NAME = "alumni"
   PAGE_SIZE = 20
-  PROFILE_FIELDS = %w[display_name country_code region_code city_code industry visible].freeze
+  PROFILE_FIELDS = %w[display_name country_code region_code industry visible].freeze
   USER_FIELDS = %w[
     isbf_alumni_display_name
     isbf_alumni_country
     isbf_alumni_region
-    isbf_alumni_city
     isbf_alumni_industry
     isbf_alumni_visible
   ].freeze
@@ -19,7 +18,6 @@ module IsbfAlumni
   DISPLAY_NAME_FIELD = "isbf_alumni_display_name"
   COUNTRY_FIELD = "isbf_alumni_country"
   REGION_FIELD = "isbf_alumni_region"
-  CITY_FIELD = "isbf_alumni_city"
   INDUSTRY_FIELD = "isbf_alumni_industry"
   VISIBLE_FIELD = "isbf_alumni_visible"
 
@@ -66,7 +64,6 @@ module IsbfAlumni
         display_name: fields[DISPLAY_NAME_FIELD].presence || user.name.presence || user.username,
         country_code: fields[COUNTRY_FIELD].to_s,
         region_code: fields[REGION_FIELD].to_s,
-        city_code: fields[CITY_FIELD].to_s,
         industry: fields[INDUSTRY_FIELD].to_s,
         visible: fields[VISIBLE_FIELD].to_s == "true",
       }
@@ -87,7 +84,6 @@ module IsbfAlumni
       display_name = text(input["display_name"], 60, required: true)
       industry = text(input["industry"], 60, required: true)
       region_code = input["region_code"].to_s.upcase
-      city_code = input["city_code"].to_s.upcase
       regions = country.fetch("regions", [])
       region = nil
 
@@ -98,24 +94,18 @@ module IsbfAlumni
         raise Discourse::InvalidParameters.new("region_code")
       end
 
-      if city_code.present?
-        city = region && Array(region["cities"]).find { |item| item["code"] == city_code }
-        raise Discourse::InvalidParameters.new("city_code") unless city
-      end
-
       visible = boolean(input["visible"])
       user.upsert_custom_fields(
         DISPLAY_NAME_FIELD => display_name,
         COUNTRY_FIELD => country_code,
         REGION_FIELD => region_code,
-        CITY_FIELD => city_code,
         INDUSTRY_FIELD => industry,
         VISIBLE_FIELD => visible ? "true" : "false",
       )
       profile(user)
     end
 
-    def directory(country_code:, region_code:, city_code:, page:)
+    def directory(country_code:, region_code:, page:)
       alumni_group = group
       return [] unless available? && alumni_group
 
@@ -133,12 +123,6 @@ module IsbfAlumni
           id: UserCustomField.where(name: REGION_FIELD, value: region_code).select(:user_id),
         )
       end
-      if city_code.present?
-        scope = scope.where(
-          id: UserCustomField.where(name: CITY_FIELD, value: city_code).select(:user_id),
-        )
-      end
-
       users = scope.order(:id).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE + 1).to_a
       has_more = users.length > PAGE_SIZE
       users = users.first(PAGE_SIZE)
@@ -154,10 +138,8 @@ module IsbfAlumni
       fields = user.preloaded_custom_fields || {}
       country_code = fields[COUNTRY_FIELD].to_s
       region_code = fields[REGION_FIELD].to_s
-      city_code = fields[CITY_FIELD].to_s
       country = Geography.country(country_code)
       region = country && Geography.region(country, region_code)
-      city = region && Geography.city(region, city_code)
 
       {
         id: user.id,
@@ -167,8 +149,6 @@ module IsbfAlumni
         country_name: country&.fetch("name", nil),
         region_code: region_code,
         region_name: region&.fetch("name", nil),
-        city_code: city_code,
-        city_name: city&.fetch("name", nil),
         industry: fields[INDUSTRY_FIELD].to_s,
       }
     end
