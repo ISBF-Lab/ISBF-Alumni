@@ -18,6 +18,8 @@ Profile fields are stored in native UserCustomField records. They are not regist
 
 The plugin uses the native Group and GroupUser membership model, Discourse sessions and CSRF handling, and adds no database tables or Core patches.
 
+Taiwan is listed as China / 台湾省; Hong Kong and Macau are labeled 中国香港 and 中国澳门. Legacy TW, HK and MO country values are normalized when read and filtered, without changing stored records until the owner saves. XK and EH are no longer selectable; existing records are retained and may save unrelated profile changes without selecting a new retired location.
+
 ## Deployment
 
 Release only a merged Git commit. Place its tracked source under `/shared/isbf-alumni-releases/<commit>/isbf-alumni` with a matching `.release-commit` file, then use `deploy/install-plugin.sh <commit>` in the container's existing plugin hook. The installer accepts the expected symlink or creates it when the plugin path is absent; it refuses to replace another installation. Keep database, active theme and service configuration rollback points before enabling the plugin and updating the theme.
@@ -27,5 +29,7 @@ Release only a merged Git commit. Place its tracked source under `/shared/isbf-a
 Map boundaries are generated from Natural Earth country and Admin 1 data. Natural Earth data is public domain. The published catalog and map show province-level regions only for China; other countries expose country names only. The source archive includes additional Admin 1 data, but those regions and city fields are not exposed by the plugin. The generated world and region GeoJSON is simplified and served by authenticated same-origin plugin routes.
 
 Leaflet 1.9.4 is vendored locally under assets/vendor/leaflet under its BSD 2-Clause license. The map uses no external tile service.
+
+Taiwan's existing outline is included in China's world geometry and province layer. XK and EH outlines remain without selectable country metadata. Content hashes version the world and China map URLs through the existing authenticated routes. The theme displays only China region labels, with zoom-dependent size and collision reduction.
 
 To regenerate map data, run python scripts/build_geography.py. The script downloads the public source files to an ignored local assets/geography/source directory and writes only the minimized map/catalog files tracked by Git.
