@@ -1,3 +1,4 @@
+import copy
 import json
 import math
 import re
@@ -8,6 +9,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets/geography/source"
 OUT = ROOT / "assets/geography"
+REMOVED_COUNTRY_CODES = {"TW", "XK", "EH"}
 DETAIL_CODES = {"CN": "CHN", "US": "USA", "CA": "CAN", "GB": "GBR", "AU": "AUS", "JP": "JPN", "DE": "DEU", "FR": "FRA"}
 COUNTRY_ZH = {
     "CN": "\u4e2d\u56fd", "US": "\u7f8e\u56fd", "CA": "\u52a0\u62ff\u5927",
@@ -148,6 +150,18 @@ def main():
             "properties": {"code": code, "country_code": code, "name": name},
             "geometry": simplify_geometry(feature.get("geometry"), 0.15),
         })
+    taiwan = next(item for item in world_features if item["properties"]["code"] == "TW")
+    china = next(item for item in world_features if item["properties"]["code"] == "CN")
+    def polygons(geometry):
+        return [geometry["coordinates"]] if geometry["type"] == "Polygon" else geometry["coordinates"]
+    china["geometry"] = {
+        "type": "MultiPolygon",
+        "coordinates": polygons(china["geometry"]) + copy.deepcopy(polygons(taiwan["geometry"])),
+    }
+    world_features.remove(taiwan)
+    for feature in world_features:
+        if feature["properties"]["code"] in REMOVED_COUNTRY_CODES:
+            feature["properties"] = {}
     (OUT / "world.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": world_features}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
     source = json.loads((SOURCE / "admin1-selected.geojson").read_text(encoding="utf-8"))
@@ -172,6 +186,11 @@ def main():
             "properties": {"code": code, "country_code": country_code, "name": name},
             "geometry": simplify_geometry(feature.get("geometry"), 0.025),
         })
+    regions_by_country["CN"].append({
+        "type": "Feature",
+        "properties": {"code": "TW", "country_code": "CN", "name": "台湾省"},
+        "geometry": copy.deepcopy(taiwan["geometry"]),
+    })
     for code, features in regions_by_country.items():
         features.sort(key=lambda item: item["properties"]["name"])
         (OUT / "regions" / f"{code}.geojson").write_text(
@@ -186,8 +205,8 @@ def main():
             for item in features
         ]
     region_catalog["CN"].extend([
-        {"code": "HK", "name": "\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a", "cities": []},
-        {"code": "MO", "name": "\u6fb3\u95e8\u7279\u522b\u884c\u653f\u533a", "cities": []},
+        {"code": "HK", "name": "中国香港", "cities": []},
+        {"code": "MO", "name": "中国澳门", "cities": []},
     ])
     by_region = {
         code: {region["code"]: region for region in regions}
@@ -204,6 +223,7 @@ def main():
             "regions": region_catalog.get(code, []),
         }
         for code, name in sorted(country_names.items(), key=lambda item: item[1])
+        if code not in REMOVED_COUNTRY_CODES
     ]
     catalog = {"countries": countries, "default_country": "CN"}
     (OUT / "catalog.json").write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

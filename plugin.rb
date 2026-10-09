@@ -2,7 +2,7 @@
 
 # name: isbf-alumni
 # about: Alumni directory and interactive geography, using native Discourse groups and user custom fields.
-# version: 0.1.0
+# version: 0.1.1
 # authors: ISBF Lab
 # url: https://github.com/ISBF-Lab/ISBF-Alumni
 # required_version: 3.2.0

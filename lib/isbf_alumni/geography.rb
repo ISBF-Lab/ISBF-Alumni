@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require "digest"
+
 module IsbfAlumni
   module Geography
     DATA_ROOT = File.expand_path("../../assets/geography", __dir__)
     DETAILED_COUNTRY_CODES = %w[CN].freeze
+    LEGACY_CHINA_CODES = %w[TW HK MO].freeze
+    RETIRED_COUNTRY_NAMES = { "XK" => "科索沃", "EH" => "西撒哈拉" }.freeze
 
     class << self
       def catalog
@@ -41,6 +45,25 @@ module IsbfAlumni
 
       def detailed_country_codes
         DETAILED_COUNTRY_CODES
+      end
+
+      def normalize_location(country_code, region_code)
+        country_code = country_code.to_s.upcase
+        region_code = region_code.to_s.upcase
+        if LEGACY_CHINA_CODES.include?(country_code)
+          ["CN", country_code]
+        else
+          [country_code, region_code]
+        end
+      end
+
+      def asset_version(relative_path)
+        @asset_versions ||= {}
+        @asset_versions[relative_path] ||= Digest::SHA256.file(asset_path(relative_path)).hexdigest
+      end
+
+      def asset_url(relative_path)
+        "/isbf/alumni/geography/#{relative_path}?v=#{asset_version(relative_path)}"
       end
 
       def asset_path(relative_path)
