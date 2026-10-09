@@ -243,8 +243,11 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
     expect(response.body).to include('"country_code":"CN"')
     expect(response.headers["Cache-Control"]).to include("private")
     world = response.parsed_body.fetch("features")
-    expect(world.map { |feature| feature.fetch("properties").fetch("country_code") }).not_to include("TW", "XK", "EH")
-    expect(world.map { |feature| feature.fetch("properties").fetch("country_code") }).to include("PS")
+    expect(world.map { |feature| feature.fetch("properties")["country_code"] }).not_to include("TW", "XK", "EH")
+    expect(world.map { |feature| feature.fetch("properties")["country_code"] }).to include("PS")
+    excluded_outlines = world.select { |feature| feature.fetch("properties").empty? }
+    expect(excluded_outlines.length).to eq(2)
+    expect(excluded_outlines.map { |feature| feature.fetch("geometry").fetch("coordinates") }).to all(be_present)
 
     get "/isbf/alumni/geography/regions/CN.geojson"
     expect(response.status).to eq(200), response.body
