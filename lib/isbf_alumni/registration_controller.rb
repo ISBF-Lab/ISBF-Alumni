@@ -4,15 +4,15 @@ module IsbfAlumni
   class RegistrationController < ::ApplicationController
     requires_plugin "isbf-alumni"
     skip_before_action :redirect_to_login_if_required, raise: false
-    before_action :no_cache
+    before_action :set_private_headers
     before_action :ensure_registration, except: :proof
-    before_action :ensure_new_account, except: %i[config proof]
+    before_action :ensure_new_account, except: %i[configuration proof]
 
     rescue_from RegistrationError do |error|
       render_json_error(error.message, status: error.key == :application_locked ? 409 : 422)
     end
 
-    def config
+    def configuration
       render json: {
         enabled: Registration.enabled?,
         countries: Geography.registration_catalog,
@@ -93,7 +93,7 @@ module IsbfAlumni
       raise Discourse::InvalidAccess if current_user
     end
 
-    def no_cache
+    def set_private_headers
       response.headers["Cache-Control"] = "private, no-store"
       response.headers["Vary"] = "Cookie"
       response.headers["X-Content-Type-Options"] = "nosniff"

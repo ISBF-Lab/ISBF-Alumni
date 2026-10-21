@@ -181,9 +181,10 @@ RSpec.describe IsbfAlumni::Proofs do
     upload = generated_upload
     original = upload.tempfile.path
     allow(ImageMagick).to receive(:identify).and_call_original
-    expect(ImageMagick).to receive(:identify).with(anything, any_args, hash_including(operation: "isbf-alumni-proof", read: [original], write: [], timeout: be <= 15)).and_call_original
-    expect(ImageMagick).to receive(:magick).with(anything, any_args, hash_including(operation: "isbf-alumni-proof", read: [original], write: [kind_of(String)], timeout: be <= 15)).at_least(:once).and_call_original
+    allow(ImageMagick).to receive(:magick).and_call_original
     described_class.upload!(application, upload)
+    expect(ImageMagick).to have_received(:identify).with(any_args, operation: "isbf-alumni-proof", read: [original], write: [], timeout: be <= 15).at_least(:once)
+    expect(ImageMagick).to have_received(:magick).with(any_args, operation: "isbf-alumni-proof", read: [original], write: [kind_of(String)], timeout: be <= 15).at_least(:once)
   end
 
   it "bounds uploads and disallows mutation after submission" do

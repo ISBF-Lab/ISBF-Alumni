@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ISBF-Lab/ISBFweb
-          ref: ea18d2696b6116c30b8120d7e1da6b59b75ab09b
+          ref: 794d23040ada822c34f1e03e572599aa04613df7
           ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
           path: discourse
           persist-credentials: false
@@ -66,6 +66,8 @@ jobs:
         if: always()
         with:
           name: alumni-registration-results-${{ github.run_id }}
-          path: discourse/tmp/alumni-registration-rspec.log
+          path: |
+            discourse/tmp/alumni-registration-rspec.log
+            discourse/log/test.log
           if-no-files-found: warn
           retention-days: 14

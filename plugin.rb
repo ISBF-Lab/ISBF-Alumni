@@ -44,7 +44,7 @@ after_initialize do
   end
 
   IsbfAlumni::Engine.routes.draw do
-    get "/registration-config" => "registration#config"
+    get "/registration-config" => "registration#configuration"
     post "/applications/email" => "registration#email"
     post "/applications/verify-email" => "registration#verify_email"
     get "/applications/current" => "registration#current"
