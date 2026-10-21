@@ -8,14 +8,30 @@
 # required_version: 3.2.0
 
 enabled_site_setting :isbf_alumni_enabled
+register_asset "stylesheets/registration.scss"
 
 after_initialize do
   require_relative "lib/isbf_alumni"
   require_relative "lib/isbf_alumni/geography"
   require_relative "lib/isbf_alumni/controllers"
+  require_relative "lib/isbf_alumni/registration"
+  require_relative "lib/isbf_alumni/proofs"
+  require_relative "lib/isbf_alumni/registration_controller"
+  require_relative "app/models/isbf_alumni/application"
+  require_relative "app/models/reviewable_isbf_alumni"
+  require_relative "app/serializers/reviewable_isbf_alumni_serializer"
+  require_relative "app/mailers/isbf_alumni/mailer"
+  require_relative "app/jobs/regular/isbf_alumni_verification_email"
+  require_relative "app/jobs/regular/isbf_alumni_decision_email"
+  require_relative "lib/isbf_alumni/review_scope"
+
+  register_reviewable_type ReviewableIsbfAlumni
+  Invite.attr_accessor :isbf_alumni_application_id
+  Reviewable.singleton_class.prepend(IsbfAlumni::ReviewScope)
+  Rails.application.config.filter_parameters += %i[code real_name graduation_year proof_ids]
 
   IsbfAlumni::USER_FIELDS.each do |field|
-    register_user_custom_field_type(field, :string, max_length: 256)
+    register_user_custom_field_type(field, :string, max_length: field == IsbfAlumni::BIO_FIELD ? 500 : 256)
   end
 
   add_to_serializer(:site, :isbf_alumni, include_condition: -> { IsbfAlumni.available? }) do
@@ -27,6 +43,15 @@ after_initialize do
   end
 
   IsbfAlumni::Engine.routes.draw do
+    get "/registration-config" => "registration#config"
+    post "/applications/email" => "registration#email"
+    post "/applications/verify-email" => "registration#verify_email"
+    get "/applications/current" => "registration#current"
+    post "/applications" => "registration#submit"
+    post "/applications/resend" => "registration#resend"
+    post "/application-proofs" => "registration#upload"
+    get "/application-proofs/:id" => "registration#proof"
+    delete "/application-proofs/:id" => "registration#remove_proof"
     get "/" => "alumni#page"
     get "/geography" => "alumni#geography"
     get "/geography/world.geojson" => "alumni#world", format: false

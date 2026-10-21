@@ -1,0 +1,18 @@
+zh_CN:
+  js:
+    review:
+      types:
+        reviewable_isbf_alumni:
+          title: "校友审核"
+          noun: "校友申请"
+    isbf_alumni:
+      reviewables:
+        actions:
+          approve_alumni:
+            title: "通过校友申请"
+            description: "批准申请并通过邮件发送专用注册链接。"
+            complete: "申请已通过，注册邮件已进入发送队列。"
+          reject_alumni:
+            title: "拒绝并说明原因"
+            description: "填写原因并通知申请人补交材料。"
+            complete: "申请已拒绝，通知邮件已进入发送队列。"

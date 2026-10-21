@@ -43,6 +43,24 @@ module IsbfAlumni
         Array(country&.fetch("regions", [])).find { |item| item["code"] == code.to_s.upcase }
       end
 
+      def cities(country_code, region_code)
+        return [] unless country_code.to_s.upcase == "CN"
+        @cities ||= JSON.parse(File.read(File.join(DATA_ROOT, "cities.json"), encoding: "UTF-8"))
+        @cities.fetch(region_code.to_s.upcase, [])
+      end
+
+      def city(country_code, region_code, city_code)
+        cities(country_code, region_code).find { |item| item["code"] == city_code.to_s }
+      end
+
+      def registration_catalog
+        countries.map do |item|
+          item.merge("regions" => item.fetch("regions", []).map do |province|
+            province.merge("cities" => cities(item["code"], province["code"]))
+          end)
+        end
+      end
+
       def detailed_country_codes
         DETAILED_COUNTRY_CODES
       end
