@@ -92,6 +92,45 @@ RSpec.describe IsbfAlumni::Registration do
     expect(duplicate).not_to be_valid
   end
 
+  it "rejects a stale browser session snapshot after the verification challenge is consumed" do
+    described_class.request_code(email: email, session: owner_session, ip: "192.0.2.10")
+    stale_session = owner_session.dup
+    challenge = described_class.challenge(owner_session.fetch(:isbf_alumni_challenge))
+    code = described_class.verification_code(challenge)
+    verified = described_class.verify_code(code: code, session: owner_session)
+    expect { described_class.verify_code(code: code, session: stale_session) }.to raise_error(IsbfAlumni::RegistrationError)
+    expect(IsbfAlumni::Application.where(email: email).pluck(:id)).to eq([verified.id])
+    expect(stale_session[:isbf_alumni_verified]).to be_nil
+  end
+
+  it "limits guessing across session snapshots and expires unused challenges" do
+    described_class.request_code(email: email, session: owner_session, ip: "192.0.2.10")
+    challenge = described_class.challenge(owner_session.fetch(:isbf_alumni_challenge))
+    correct = described_class.verification_code(challenge)
+    wrong = correct == "000000" ? "000001" : "000000"
+    5.times do
+      expect { described_class.verify_code(code: wrong, session: owner_session.dup) }.to raise_error(IsbfAlumni::RegistrationError)
+    end
+    expect { described_class.verify_code(code: correct, session: owner_session) }.to raise_error(IsbfAlumni::RegistrationError)
+    described_class.request_code(email: email, session: owner_session, ip: "192.0.2.10")
+    challenge = described_class.challenge(owner_session.fetch(:isbf_alumni_challenge))
+    Discourse.redis.del("isbf-alumni:verification:#{owner_session.fetch(:isbf_alumni_challenge)}")
+    expect {
+      described_class.verify_code(code: described_class.verification_code(challenge), session: owner_session)
+    }.to raise_error(IsbfAlumni::RegistrationError)
+    expect(IsbfAlumni::Application.where(email: email)).to be_empty
+  end
+
+  it "distinguishes removable draft proof from retained evidence and resolves location for reviewers" do
+    application = verified_application
+    proof = attach_private_proof(application)
+    expect(application.public_status[:proofs]).to include(include(id: proof, bound: false))
+    described_class.submit!(application, real_name: "Graduate", graduation_year: 2020, proof_ids: [proof], country_code: "CN", region_code: "GD", city_code: "4403")
+    status = application.reload.public_status
+    expect(status[:proofs]).to include(include(id: proof, bound: true))
+    expect(status).to include(country_name: "中国", region_name: "广东", city_display_name: "深圳市")
+  end
+
   it "does not verify an existing community account or expose its existence in the request response" do
     Fabricate(:user, email: email)
     expect(described_class.request_code(email: email, session: owner_session, ip: "192.0.2.10")).to eq(true)
@@ -158,6 +197,18 @@ RSpec.describe IsbfAlumni::Registration do
     2.times { job.execute(application_id: application.id, version: application.mail_version) }
     expect(sender).to have_received(:send).once
     expect(application.reload.mail_status).to eq("sent")
+  end
+
+  it "builds verification and decision emails through the native site mail settings" do
+    message = IsbfAlumni::Mailer.verification(email, "123456").message
+    expect(message.to).to eq([email])
+    expect(message.from).to eq([SiteSetting.notification_email])
+    expect(message.body.decoded).to include("123456")
+    application = approved_application
+    approved_message = IsbfAlumni::Mailer.decision(application).message
+    expect(approved_message.to).to eq([email])
+    expect(approved_message.body.decoded).to include(application.invite.invite_key)
+    expect(approved_message.body.decoded).not_to include(application.real_name)
   end
 
   it "reissues an expired registration link and invalidates the original link" do

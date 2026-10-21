@@ -122,7 +122,8 @@ assert.equal(
   "Busy state prevents duplicate requests"
 );
 form.busy = false;
-form.application = { status: "rejected", proofs: [{ id: 1 }] };
+form.application = { status: "rejected", proofs: [{ id: 1, bound: true }] };
+form.proofs = [{ id: 1, bound: true }];
 assert.equal(form.editable, true);
 const count = calls.length;
 await form.remove(form.proofs[0]);
@@ -131,6 +132,31 @@ assert.equal(
   count,
   "Existing submitted evidence is detached locally, never deleted"
 );
+handler = (url) =>
+  url.endsWith("registration-config")
+    ? { enabled: true, countries: [] }
+    : {
+        verified: true,
+        application: {
+          status: "draft",
+          proofs: [{ id: "unsubmitted", bound: false }],
+        },
+      };
+await form.load();
+assert.equal(form.proofs[0].id, "unsubmitted");
+const beforeDraftRemoval = calls.length;
+await form.remove(form.proofs[0]);
+assert.equal(calls.length, beforeDraftRemoval + 1);
+assert.equal(calls.at(-1).url, "/isbf/alumni/application-proofs/unsubmitted");
+assert.equal(calls.at(-1).options.type, "DELETE");
+assert.equal(form.proofs.length, 0);
+form.proofs = [{ id: "retry", bound: false }];
+handler = () => {
+  throw new Error("Delete failed");
+};
+await form.remove(form.proofs[0]);
+assert.equal(form.proofs.length, 1, "Failed removal keeps the proof for retry");
+assert.equal(form.error, "Delete failed");
 form.willDestroy();
 assert.equal(form.email, "");
 assert.equal(form.proofs.length, 0);

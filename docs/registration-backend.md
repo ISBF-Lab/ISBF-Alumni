@@ -8,6 +8,8 @@ The public registration UI is supplied through the academy identity plugin's `ac
 
 Anonymous application ownership uses the native signed session after a 15-minute email-code challenge. Codes are encrypted in expiring Redis data and are absent from HTTP responses and job arguments. Owner sessions expire after 24 hours and may be regained by verifying the same email. Five incorrect attempts invalidate a challenge. Account creation waits for approval; existing accounts cannot enter this signup flow.
 
+Challenge verification and consumption run under the same distributed lock, so parallel requests cannot consume a code twice. The review query scope excludes alumni applications without the dedicated permission, and the native review type selector omits this type for those users. Application, proof and action endpoints independently enforce their permissions. Review payloads resolve country, province and city names without changing the stored identifiers.
+
 Approved email-bound invites expire after seven days and have one redemption. Reissuing invalidates the prior invite; delivery retry keeps the current invite. The academy plugin must recognize the approved Alumni binding, including in its invitation cleanup task. Closing new applications retains the compatibility required to redeem already approved invitations.
 
 ## Private proof processing

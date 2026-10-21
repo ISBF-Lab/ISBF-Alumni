@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 module IsbfAlumni
-  class Mailer < ::ApplicationMailer
+  class Mailer < ::ActionMailer::Base
+    include Email::BuildEmailHelper
+
     def verification(email, code)
       build_notice(email, "verification", code: code)
     end
@@ -25,11 +27,10 @@ module IsbfAlumni
 
     def build_notice(email, kind, **values)
       values[:site_name] = SiteSetting.title
-      mail(
-        to: email,
+      build_email(
+        email,
         subject: I18n.t("isbf_alumni.emails.#{kind}.subject", **values),
         body: I18n.t("isbf_alumni.emails.#{kind}.body", **values),
-        content_type: "text/plain; charset=UTF-8",
       )
     end
   end

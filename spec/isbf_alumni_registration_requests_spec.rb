@@ -161,6 +161,40 @@ RSpec.describe "ISBF Alumni registration and private evidence", type: :request d
     expect(response.status).to be_in([403, 404])
   end
 
+  it "hides alumni review types, counts, details and actions when only general review is enabled" do
+    application, id = private_application
+    IsbfAlumni::Registration.submit!(application, real_name: "Private Graduate", graduation_year: 2020, proof_ids: [id])
+    SiteSetting.academy_moderators_review_content = true
+    sign_in(administrator)
+    get "/review.json"
+    expect(response.status).to eq(200), response.body
+    expect(response.parsed_body.fetch("meta").fetch("reviewable_types")).not_to include("ReviewableIsbfAlumni")
+    expect(response.parsed_body.fetch("meta").fetch("total_rows_reviewables")).to eq(0)
+    expect(response.body).not_to include(application.email, application.real_name, id)
+    get "/review/#{application.reviewable_id}.json"
+    expect(response.status).to be_in([403, 404])
+    put "/review/#{application.reviewable_id}/perform/approve_alumni.json", params: { version: application.reviewable.version }
+    expect(response.status).to be_in([403, 404])
+    expect(application.reload.status).to eq("pending")
+  end
+
+  it "exposes only the alumni queue to a delegated reviewer and permits native rejection with a reason" do
+    application, id = private_application
+    IsbfAlumni::Registration.submit!(application, real_name: "Private Graduate", graduation_year: 2020, proof_ids: [id])
+    SiteSetting.academy_moderators_review_alumni = true
+    sign_in(administrator)
+    get "/review.json", params: { type: "ReviewableIsbfAlumni" }
+    expect(response.status).to eq(200), response.body
+    expect(response.parsed_body.fetch("meta").fetch("reviewable_types")).to include("ReviewableIsbfAlumni")
+    expect(response.parsed_body.fetch("meta").fetch("total_rows_reviewables")).to eq(1)
+    expect(response.body).to include(application.email, application.real_name, id)
+    expect(administrator.guardian.can_see_emails?).to eq(false)
+    put "/review/#{application.reviewable_id}/perform/reject_alumni.json", params: { version: application.reviewable.version, reject_reason: "Please upload clearer proof" }
+    expect(response.status).to eq(200), response.body
+    expect(application.reload.status).to eq("rejected")
+    expect(application.rejection_reason).to eq("Please upload clearer proof")
+  end
+
   it "does not expose legal identity, email or proof links in the public alumni directory" do
     application, id = private_application
     application.update!(status: "registered", user: member, real_name: "Never Public Legal Name", graduation_year: 2020)

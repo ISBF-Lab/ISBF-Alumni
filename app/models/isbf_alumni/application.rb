@@ -22,12 +22,18 @@ module IsbfAlumni
     end
 
     def public_status
+      country = Geography.country(profile["country_code"])
+      region = Geography.region(country, profile["region_code"])
+      city = Geography.city(profile["country_code"], profile["region_code"], profile["city_code"])
       {
         id: id,
         status: status,
         real_name: real_name.to_s,
         graduation_year: graduation_year,
         **profile.symbolize_keys,
+        country_name: country&.fetch("name", "").to_s,
+        region_name: region&.fetch("name", "").to_s,
+        city_display_name: city&.fetch("name", nil) || profile["city_name"].to_s,
         proofs: submitted_proofs,
         rejection_reason: rejection_reason.to_s,
         mail_status: mail_status,
@@ -42,6 +48,7 @@ module IsbfAlumni
         {
           id: proof.fetch("id"),
           bytes: proof.fetch("bytes"),
+          bound: proof["bound"] == true,
           url: "/isbf/alumni/application-proofs/#{proof.fetch('id')}",
         }
       end

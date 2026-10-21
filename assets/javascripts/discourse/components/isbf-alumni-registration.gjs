@@ -201,7 +201,7 @@ export default class IsbfAlumniRegistration extends Component {
   @action
   async remove(proof) {
     await this.#run(async () => {
-      if (!this.application?.proofs?.some((item) => item.id === proof.id)) {
+      if (!proof.bound) {
         await this.#request(
           `/application-proofs/${encodeURIComponent(proof.id)}`,
           { type: "DELETE" }

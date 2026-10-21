@@ -44,7 +44,7 @@ module IsbfAlumni
               File.chmod(0o600, destination)
               entry = { "id" => id, "bytes" => File.size(destination), "created_at" => Time.now.utc.iso8601 }
               application.update!(proofs: entries + [entry])
-              { id: id, url: "/isbf/alumni/application-proofs/#{id}", bytes: entry["bytes"] }
+              { id: id, url: "/isbf/alumni/application-proofs/#{id}", bytes: entry["bytes"], bound: false }
             end
           ensure
             output.close!

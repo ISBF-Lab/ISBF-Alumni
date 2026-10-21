@@ -26,7 +26,7 @@ en:
         preview: "Preview compressed proof"
         remove: "Remove"
         visible: "Show my public details in the alumni network"
-        privacy: "Your legal name, email, graduation year and proof are private review information and will not be published automatically."
+        privacy: "Your legal name, email, graduation year and proof are private review information and will not be published automatically. Submitted evidence is retained privately without an expiry date."
         submit: "Submit alumni application"
         submitted: "Application submitted. Please wait for the review email."
         status_draft: "Complete application"

@@ -67,21 +67,23 @@ module IsbfAlumni
         ensure_enabled!
         nonce = session[:isbf_alumni_challenge]
         raise RegistrationError.new(:invalid_code) unless nonce.present? && code.is_a?(String) && code.match?(/\A\d{6}\z/)
-        attempts_key = "#{challenge_key(nonce)}:attempts"
-        attempts = Discourse.redis.incr(attempts_key)
-        Discourse.redis.expire(attempts_key, VERIFY_TTL)
-        data = challenge(nonce)
-        valid = attempts <= 5 && data && data["eligible"] &&
-          ActiveSupport::SecurityUtils.secure_compare(data.fetch("code_digest"), digest("#{nonce}:#{code}"))
-        raise RegistrationError.new(:invalid_code) unless valid
-        application = Application.find_or_create_by!(email: data.fetch("email")) do |record|
-          record.email_verified_at = Time.current
+        DistributedMutex.synchronize("isbf-alumni-verify-#{digest(nonce)}") do
+          attempts_key = "#{challenge_key(nonce)}:attempts"
+          attempts = Discourse.redis.incr(attempts_key)
+          Discourse.redis.expire(attempts_key, VERIFY_TTL)
+          data = challenge(nonce)
+          valid = attempts <= 5 && data && data["eligible"] &&
+            ActiveSupport::SecurityUtils.secure_compare(data.fetch("code_digest"), digest("#{nonce}:#{code}"))
+          raise RegistrationError.new(:invalid_code) unless valid
+          application = Application.find_or_create_by!(email: data.fetch("email")) do |record|
+            record.email_verified_at = Time.current
+          end
+          application.update!(email_verified_at: Time.current)
+          session[:isbf_alumni_verified] = { "id" => application.id, "at" => Time.current.to_i }
+          session.delete(:isbf_alumni_challenge)
+          Discourse.redis.del(challenge_key(nonce), attempts_key)
+          application
         end
-        application.update!(email_verified_at: Time.current)
-        session[:isbf_alumni_verified] = { "id" => application.id, "at" => Time.current.to_i }
-        session.delete(:isbf_alumni_challenge)
-        Discourse.redis.del(challenge_key(nonce), attempts_key)
-        application
       end
 
       def current_application(session)

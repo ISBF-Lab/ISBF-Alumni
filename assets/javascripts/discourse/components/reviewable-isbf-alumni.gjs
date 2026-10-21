@@ -11,7 +11,7 @@ export default class ReviewableIsbfAlumni extends Component {
     return [
       application.country_name || application.country_code,
       application.region_name || application.region_code,
-      application.city_name,
+      application.city_display_name || application.city_name,
     ]
       .filter((part, index, parts) => part && part !== parts[index - 1])
       .join(" · ");

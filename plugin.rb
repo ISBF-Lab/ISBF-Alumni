@@ -28,6 +28,7 @@ after_initialize do
   register_reviewable_type ReviewableIsbfAlumni
   Invite.attr_accessor :isbf_alumni_application_id
   Reviewable.singleton_class.prepend(IsbfAlumni::ReviewScope)
+  ReviewablesController.prepend(IsbfAlumni::ReviewMetadata)
   Rails.application.config.filter_parameters += %i[code real_name graduation_year proof_ids]
 
   IsbfAlumni::USER_FIELDS.each do |field|
