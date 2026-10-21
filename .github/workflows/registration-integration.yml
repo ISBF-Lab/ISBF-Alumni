@@ -1,0 +1,73 @@
+name: Alumni registration integration
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alumni-registration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  registration:
+    runs-on: ubuntu-latest
+    container: discourse/discourse_test:release
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+        working-directory: discourse
+    env:
+      RAILS_ENV: test
+      PGUSER: discourse
+      PGPASSWORD: discourse
+      LOAD_PLUGINS: "1"
+      PARALLEL_TEST_PROCESSORS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ISBF-Lab/ISBFweb
+          ref: b092ca00a17c79a0f5c2cfc0d73ed32912513bf8
+          ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
+          path: discourse
+          persist-credentials: false
+      - name: Prepare native Discourse and the plugin
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/discourse"
+          cp -a ../plugin plugins/isbf-alumni
+          redis-server /etc/redis/redis.conf --daemonize yes --logfile ""
+          chown -R postgres /var/run/postgresql
+          sudo -E -u postgres script/start_test_db.rb
+          sudo -u postgres psql -c "CREATE ROLE discourse LOGIN SUPERUSER PASSWORD 'discourse';"
+          ln -s /var/www/discourse/vendor/bundle vendor/bundle
+          bundle config --local path vendor/bundle
+          bundle config --local deployment true
+          bundle config --local without development
+          bundle install --jobs 1
+          pnpm install --frozen-lockfile
+      - name: Migrate test data and verify native HEIC decoding
+        run: |
+          bin/rake db:create db:migrate
+          identify -list format | grep -E 'HEIC.*[r][w-]'
+      - name: Profiles, proof processing, registration and delegated permissions
+        run: |
+          mkdir -p tmp
+          bin/rspec plugins/isbf-alumni/spec plugins/discourse-academy-roles/spec/lib/alumni_* plugins/discourse-academy-roles/spec/requests/alumni_* | tee tmp/alumni-registration-rspec.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: alumni-registration-results-${{ github.run_id }}
+          path: |
+            discourse/tmp/alumni-registration-rspec.log
+            discourse/log/test.log
+          if-no-files-found: warn
+          retention-days: 14

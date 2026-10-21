@@ -1,0 +1,40 @@
+zh_CN:
+  site_settings:
+    isbf_alumni_registration_enabled: "开放校友注册申请。启用前须安装兼容身份插件并完成邮件与证明处理验收。"
+    isbf_alumni_proof_storage_mb: "校友证明私有文件总容量上限（MiB）。已提交证明长期保留，不自动删除。"
+  isbf_alumni:
+    errors:
+      invalid_email: "请填写有效邮箱。"
+      invalid_code: "验证码错误或已过期，请重新获取。"
+      invalid_year: "请选择有效的毕业年份。"
+      invalid_profile: "请检查姓名、地点、行业及自我介绍。"
+      invalid_proof: "照片未能处理，请选择清晰的 JPG、PNG、WebP 或 HEIC/HEIF 图片重试。"
+      proof_limit: "待提交照片最多5张；如需补交更多材料，请联系开发者。"
+      proof_storage_full: "证明存储空间不足，请联系开发者后重试。"
+      application_locked: "申请状态已改变，请刷新后重试，当前输入会保留。"
+      email_registered: "该邮箱已有关联账号，请登录或联系开发者。"
+      email_delivery_failed: "邮件暂未发送成功，请稍后重试。"
+      merge_not_allowed: "该账号绑定校友申请记录，不能直接合并账号。"
+    emails:
+      verification:
+        subject: "%{site_name} 校友申请邮箱验证"
+        body: "你的校友申请验证码是：%{code}\n\n15分钟内有效。验证后可填写申请资料，审核通过后才能完成注册。如非本人操作，请忽略此邮件。"
+      existing_account:
+        subject: "%{site_name} 校友申请提示"
+        body: "此邮箱不能通过新校友注册入口申请。如你已有本站账号，请登录：%{login_url}\n\n如需协助，请联系本站开发者。"
+      approved:
+        subject: "%{site_name} 校友申请成功"
+        body: "你的校友申请已通过审核。请通过以下链接设置用户名和密码，完成注册：\n%{link}\n\n链接仅供本邮箱使用，7天内有效且只能完成一次注册。过期后可回到校友注册页面验证邮箱并重新发送。"
+      rejected:
+        subject: "%{site_name} 校友申请审核结果"
+        body: "你的校友申请需要补充资料。\n\n审核说明：%{reason}\n\n请通过以下页面验证同一邮箱并补交材料：\n%{link}"
+    reviewables:
+      actions:
+        approve_alumni:
+          title: "通过校友申请"
+          description: "批准申请并通过邮件发送专用注册链接。"
+          complete: "申请已通过，注册邮件已进入发送队列。"
+        reject_alumni:
+          title: "拒绝并说明原因"
+          description: "填写原因并通知申请人补交材料。"
+          complete: "申请已拒绝，通知邮件已进入发送队列。"

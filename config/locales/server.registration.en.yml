@@ -1,0 +1,40 @@
+en:
+  site_settings:
+    isbf_alumni_registration_enabled: "Enable alumni applications after verifying compatible identity integration, email and proof processing."
+    isbf_alumni_proof_storage_mb: "Private alumni proof storage limit in MiB. Submitted proofs are retained indefinitely."
+  isbf_alumni:
+    errors:
+      invalid_email: "Enter a valid email address."
+      invalid_code: "The verification code is invalid or expired. Request another code."
+      invalid_year: "Choose a valid graduation year."
+      invalid_profile: "Check the legal name, location, industry and introduction."
+      invalid_proof: "The photo could not be processed. Try a clear JPEG, PNG, WebP or HEIC/HEIF photo."
+      proof_limit: "Keep at most five unsubmitted photos. Contact a developer if more evidence is needed."
+      proof_storage_full: "Private proof storage is full. Contact a developer and retry later."
+      application_locked: "The application status changed. Refresh and retry; your input is preserved."
+      email_registered: "This email already belongs to an account. Sign in or contact a developer."
+      email_delivery_failed: "The email could not be sent. Please retry later."
+      merge_not_allowed: "This account has an alumni application and cannot be merged directly."
+    emails:
+      verification:
+        subject: "%{site_name} alumni email verification"
+        body: "Your alumni application code is: %{code}\n\nIt expires in 15 minutes. Verify your email to apply; account registration is available after approval. Ignore this email if you did not request it."
+      existing_account:
+        subject: "%{site_name} alumni application information"
+        body: "This email cannot use the new alumni registration process. If you already have an account, sign in at %{login_url}\n\nContact a site developer if you need help."
+      approved:
+        subject: "%{site_name} alumni application approved"
+        body: "Your alumni application was approved. Set a username and password to complete registration:\n%{link}\n\nThis single-use link is bound to this email and expires in seven days. Verify the same email on the alumni registration page to request a replacement if it expires."
+      rejected:
+        subject: "%{site_name} alumni application review"
+        body: "More information is needed for your application.\n\nReview reason: %{reason}\n\nVerify the same email and resubmit your evidence here:\n%{link}"
+    reviewables:
+      actions:
+        approve_alumni:
+          title: "Approve alumni application"
+          description: "Approve and email an account registration link."
+          complete: "Application approved; registration email queued."
+        reject_alumni:
+          title: "Reject with a reason"
+          description: "Explain the decision and request updated evidence by email."
+          complete: "Application rejected; notification email queued."

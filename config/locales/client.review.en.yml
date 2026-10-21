@@ -1,0 +1,18 @@
+en:
+  js:
+    review:
+      types:
+        reviewable_isbf_alumni:
+          title: "Alumni review"
+          noun: "alumni application"
+    isbf_alumni:
+      reviewables:
+        actions:
+          approve_alumni:
+            title: "Approve alumni application"
+            description: "Approve and email an account registration link."
+            complete: "Application approved; registration email queued."
+          reject_alumni:
+            title: "Reject with a reason"
+            description: "Explain the decision and request updated evidence by email."
+            complete: "Application rejected; notification email queued."

@@ -1,0 +1,97 @@
+.isbf-alumni-registration {
+  text-align: start;
+  overflow-wrap: anywhere;
+
+  h1 {
+    font-size: var(--font-up-2);
+  }
+
+  form,
+  fieldset,
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  form,
+  fieldset {
+    gap: 16px;
+  }
+
+  fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  input,
+  textarea,
+  select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    text-align: start;
+  }
+
+  input[type="checkbox"] {
+    width: 20px;
+    min-height: 20px;
+    flex-shrink: 0;
+  }
+
+  input[type="file"] {
+    white-space: normal;
+    font-size: var(--font-down-1);
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  &__visibility {
+    flex-direction: row !important;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  &__proofs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+  }
+
+  [role="alert"],
+  &__rejection {
+    color: var(--danger);
+  }
+}
+
+.reviewable-isbf-alumni {
+  overflow-wrap: anywhere;
+
+  dd {
+    white-space: pre-wrap;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
