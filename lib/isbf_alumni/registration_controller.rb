@@ -4,6 +4,7 @@ module IsbfAlumni
   class RegistrationController < ::ApplicationController
     requires_plugin "isbf-alumni"
     skip_before_action :redirect_to_login_if_required, raise: false
+    skip_before_action :check_xhr, only: :proof
     before_action :set_private_headers
     before_action :ensure_registration, except: :proof
     before_action :ensure_new_account, except: %i[configuration proof]
@@ -97,6 +98,7 @@ module IsbfAlumni
       response.headers["Cache-Control"] = "private, no-store"
       response.headers["Vary"] = "Cookie"
       response.headers["X-Content-Type-Options"] = "nosniff"
+      response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     end
 
     def owner_status(application)

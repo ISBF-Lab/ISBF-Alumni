@@ -181,10 +181,21 @@ RSpec.describe IsbfAlumni::Proofs do
     upload = generated_upload
     original = upload.tempfile.path
     allow(ImageMagick).to receive(:identify).and_call_original
-    allow(ImageMagick).to receive(:magick).and_call_original
+    conversion_calls = []
+    allow(ImageMagick).to receive(:magick).and_wrap_original do |method, *arguments, **options|
+      conversion_calls << options
+      method.call(*arguments, **options)
+    end
     described_class.upload!(application, upload)
     expect(ImageMagick).to have_received(:identify).with(any_args, operation: "isbf-alumni-proof", read: [original], write: [], timeout: be <= 15).at_least(:once)
-    expect(ImageMagick).to have_received(:magick).with(any_args, operation: "isbf-alumni-proof", read: [original], write: [kind_of(String)], timeout: be <= 15).at_least(:once)
+    expect(conversion_calls).not_to be_empty
+    conversion_calls.each do |options|
+      expect(options[:operation]).to eq("isbf-alumni-proof")
+      expect(options[:read]).to eq([original])
+      expect(options[:write].length).to eq(1)
+      expect(options[:write].first).to start_with(Rails.root.join("tmp", "isbf-alumni-private-test").to_s + "/proof-")
+      expect(options[:timeout]).to be_between(0, 15)
+    end
   end
 
   it "bounds uploads and disallows mutation after submission" do

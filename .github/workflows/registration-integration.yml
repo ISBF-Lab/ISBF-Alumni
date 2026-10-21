@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ISBF-Lab/ISBFweb
-          ref: 794d23040ada822c34f1e03e572599aa04613df7
+          ref: bc78b7687b18ecd797fd62e0e0a0a7938e82a68e
           ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
           path: discourse
           persist-credentials: false
