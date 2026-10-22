@@ -30,12 +30,13 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
     SiteSetting.academy_official_group = official_group.id
     SiteSetting.academy_official_category = official_category.id
     SiteSetting.academy_roles_enabled = true
+    SiteSetting.academy_auth_page_enabled = true
     SiteSetting.allow_new_registrations = true
     SiteSetting.enable_local_logins = true
   end
 
   def invite_info(format)
-    get "/invites/#{invite.invite_key}#{format == :json ? '.json' : ''}"
+    get "/invites/#{invite.invite_key}", headers: format == :json ? { "ACCEPT" => "application/json" } : {}
     expect(response.status).to eq(200), response.body
     return response.parsed_body if format == :json
 
@@ -55,6 +56,7 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
     it "preserves ordinary invitations in #{format}" do
       invite
       application.destroy!
+      DiscourseAcademyRoles::StudentRegistration.create!(invite: invite, issued_by: inviter, student_number: "metadata-student-fixture")
       expect(invite_info(format).fetch("isbf_alumni_invite")).to eq(false)
     end
 
@@ -67,13 +69,20 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
     it "does not mark invites while the Alumni plugin is disabled in #{format}" do
       invite
       SiteSetting.isbf_alumni_enabled = false
+      SiteSetting.academy_roles_enabled = false
       expect(invite_info(format).fetch("isbf_alumni_invite")).to eq(false)
     end
 
     it "does not mark stale application bindings in #{format}" do
       invite
       application.update!(status: "rejected")
-      expect(invite_info(format).fetch("isbf_alumni_invite")).to eq(false)
+      get "/invites/#{invite.invite_key}", headers: format == :json ? { "ACCEPT" => "application/json" } : {}
+      if format == :json
+        expect(response.status).to eq(404), response.body
+        expect(response.parsed_body["isbf_alumni_invite"]).not_to eq(true)
+      else
+        expect(Nokogiri::HTML(response.body).at_css("script#data-preloaded")).to be_nil
+      end
     end
 
     it "does not mark an existing authenticated invitee in #{format}" do
@@ -88,7 +97,7 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
 
     it "does not expose Alumni metadata from an expired invite in #{format}" do
       invite.update!(expires_at: 1.day.ago)
-      get "/invites/#{invite.invite_key}#{format == :json ? '.json' : ''}"
+      get "/invites/#{invite.invite_key}", headers: format == :json ? { "ACCEPT" => "application/json" } : {}
       expect(response.body).not_to include('"isbf_alumni_invite":true', application.real_name, application.proofs.first.fetch("id"))
     end
   end
@@ -105,9 +114,9 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
       end.not_to change(User, :count)
       expect(response.parsed_body["username_required"]).to eq(true)
       post "/session/login-code/verify.json",
-           params: { invite_key: invite.invite_key, code: code, username: "alumni-native-fixture" }
+           params: { invite_key: invite.invite_key, code: code, username: "alumni_fixture" }
       expect(response.status).to eq(200), response.body
-      expect(response.parsed_body["account_created"]).to eq(true)
+      expect(response.parsed_body["account_created"]).to eq(true), response.body
       created = application.reload.user
       expect(application.status).to eq("registered")
       expect(created.has_password?).to eq(false)

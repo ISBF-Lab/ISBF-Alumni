@@ -84,7 +84,7 @@ jobs:
       - name: Native Alumni invitation password UI
         if: always() && steps.native_assets.outcome == 'success'
         run: |
-          bin/qunit --standalone --filter '/Alumni invitation password/i' | tee tmp/alumni-password-qunit.log
+          bin/qunit --standalone --target isbf-alumni --filter '/Alumni invitation password/i' | tee tmp/alumni-password-qunit.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

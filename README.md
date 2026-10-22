@@ -22,6 +22,10 @@ Taiwan is listed as China / 台湾省; Hong Kong and Macau are labeled 中国香
 
 ## Deployment
 
+Approved Alumni invitation links expose a server-confirmed `isbf_alumni_invite` flag. With the identity plugin's `academy-invitation-form` wrapper, the optional password choice appears above the native email-code form. The same native form instance retains verified email and personal details when going back. New-application intake may be closed without invalidating already approved invitations.
+
+After native account creation, `PUT /isbf/alumni/initial-password` saves the chosen password for the authenticated owner of the registered, email-bound Alumni application. It uses native validation, password hashing, CSRF and session rotation. The request is limited to ten attempts per ten minutes; a retry of the same password succeeds without changing its hash, while an existing different password returns 409. A failed save can be retried or skipped without redeeming the invitation again. The page never stores passwords in browser storage or adds another password page after registration. This addition uses the existing application table and adds no migration.
+
 Release only a merged Git commit. Place its tracked source under `/shared/isbf-alumni-releases/<commit>/isbf-alumni` with a matching `.release-commit` file, then use `deploy/install-plugin.sh <commit>` in the container's existing plugin hook. The installer accepts the expected symlink or creates it when the plugin path is absent; it refuses to replace another installation. Keep database, active theme and service configuration rollback points before enabling the plugin and updating the theme.
 
 ## Map assets
