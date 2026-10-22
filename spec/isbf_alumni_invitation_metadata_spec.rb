@@ -131,6 +131,8 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
       get "/session/current.json"
       expect(response.parsed_body.dig("current_user", "id")).to eq(created.id)
       browser = ActionDispatch::Integration::Session.new(Rails.application)
+      browser.host! request.host
+      browser.https! request.ssl?
       if with_password
         browser.post "/session.json", params: { login: created.username, password: password }
       else

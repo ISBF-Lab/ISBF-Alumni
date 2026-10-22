@@ -19,6 +19,7 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     SiteSetting.enable_local_logins = true
     SiteSetting.enable_discourse_connect = false
     alumni_group.add(user)
+    user.update!(approved: true)
     user.user_password&.destroy!
     user.reload
     sign_in(user)
@@ -37,8 +38,11 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     expect(response.parsed_body.dig("current_user", "id")).to eq(user.id)
     expect(response.body).not_to include(password)
     browser = ActionDispatch::Integration::Session.new(Rails.application)
+    browser.host! request.host
+    browser.https! request.ssl?
     browser.post "/session.json", params: { login: user.username, password: password }
     expect(browser.response.status).to eq(200), browser.response.body
+    expect(browser.response.parsed_body["error"]).to be_nil, browser.response.body
     browser.get "/session/current.json"
     expect(browser.response.status).to eq(200), browser.response.body
     expect(browser.response.parsed_body.dig("current_user", "id")).to eq(user.id)
