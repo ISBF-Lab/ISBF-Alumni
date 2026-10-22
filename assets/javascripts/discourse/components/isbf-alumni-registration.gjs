@@ -257,7 +257,7 @@ export default class IsbfAlumniRegistration extends Component {
     this.step = current.verified ? "application" : "email";
   }
 
-  async #request(path, options) {
+  async #request(path, options = {}) {
     if (this.isDestroying) {
       throw new Error("Cancelled");
     }

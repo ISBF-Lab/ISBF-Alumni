@@ -41,6 +41,10 @@ const context = {
   i18n: (key) => key,
   extractError: (error) => error.message,
   ajax: (url, options) => {
+    assert.ok(
+      options && typeof options === "object",
+      "Native ajax requires an options object when called with two arguments"
+    );
     calls.push({ url, options });
     return Promise.resolve().then(() => handler(url, options));
   },
