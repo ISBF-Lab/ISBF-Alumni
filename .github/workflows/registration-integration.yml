@@ -63,6 +63,7 @@ jobs:
           bundle install --jobs 1
           pnpm install --frozen-lockfile
       - name: Migrate test data and verify native HEIC decoding
+        id: database
         run: |
           bin/rake db:create db:migrate
           identify -list format | grep -E 'HEIC.*[r][w-]'
@@ -71,6 +72,8 @@ jobs:
           mkdir -p tmp
           bin/rspec plugins/isbf-alumni/spec plugins/discourse-academy-roles/spec/lib/alumni_* plugins/discourse-academy-roles/spec/requests/alumni_* | tee tmp/alumni-registration-rspec.log
       - name: Build native registration frontend with both real plugins
+        id: native_assets
+        if: always() && steps.database.outcome == 'success'
         run: |
           pnpm playwright-install
           script/assemble_ember_build.rb
@@ -79,6 +82,7 @@ jobs:
           isbf_bus_address=$(dbus-daemon --session --fork --print-address 2>/dev/null)
           echo "DBUS_SESSION_BUS_ADDRESS=$isbf_bus_address" >> "$GITHUB_ENV"
       - name: Native Alumni invitation password UI
+        if: always() && steps.native_assets.outcome == 'success'
         run: |
           bin/qunit --standalone --filter '/Alumni invitation password/i' | tee tmp/alumni-password-qunit.log
       - uses: actions/upload-artifact@v4
