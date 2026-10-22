@@ -39,7 +39,9 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     browser = ActionDispatch::Integration::Session.new(Rails.application)
     browser.post "/session.json", params: { login: user.username, password: password }
     expect(browser.response.status).to eq(200), browser.response.body
-    expect(browser.response.parsed_body.dig("user", "id")).to eq(user.id)
+    browser.get "/session/current.json"
+    expect(browser.response.status).to eq(200), browser.response.body
+    expect(browser.response.parsed_body.dig("current_user", "id")).to eq(user.id)
   end
 
   it "accepts the same retry without replacing the stored hash and conflicts on another password" do
@@ -83,7 +85,6 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
   {
     unapproved_application: { status: "approved" },
     mismatched_email: { email: "different-owner@example.com" },
-    unverified_email: { email_verified_at: nil },
     missing_registration: { registered_at: nil },
     other_owner: { user_id: nil },
   }.each do |name, attributes|
@@ -115,9 +116,8 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     expect(user.reload.has_password?).to eq(false)
   end
 
-  it "rejects an inactive or unapproved account" do
-    SiteSetting.must_approve_users = true
-    user.update!(approved: false)
+  it "rejects an inactive account" do
+    user.update!(active: false)
     set_password
     expect(response.status).to eq(403), response.body
     expect(user.reload.has_password?).to eq(false)

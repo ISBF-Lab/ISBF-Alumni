@@ -27,9 +27,9 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
     SiteSetting.isbf_alumni_enabled = true
     SiteSetting.isbf_alumni_group_name = alumni_group.name
     SiteSetting.isbf_alumni_registration_enabled = true
-    SiteSetting.academy_roles_enabled = true
     SiteSetting.academy_official_group = official_group.id
     SiteSetting.academy_official_category = official_category.id
+    SiteSetting.academy_roles_enabled = true
     SiteSetting.allow_new_registrations = true
     SiteSetting.enable_local_logins = true
   end
@@ -129,7 +129,9 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
         browser.post "/session/login-code/verify.json", params: { email: created.email, code: login_code }
       end
       expect(browser.response.status).to eq(200), browser.response.body
-      expect(browser.response.parsed_body.dig("user", "id")).to eq(created.id)
+      browser.get "/session/current.json"
+      expect(browser.response.status).to eq(200), browser.response.body
+      expect(browser.response.parsed_body.dig("current_user", "id")).to eq(created.id)
       expect(User.real.where(staged: false).with_email(invite.email).count).to eq(1)
     end
   end
