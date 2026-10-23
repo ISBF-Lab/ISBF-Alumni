@@ -2,3 +2,5 @@ zh_CN:
   isbf_alumni:
     unavailable: "校友网络暂不可用。"
     invalid_profile: "请检查校友资料填写内容。"
+    initial_password_invalid: "请输入有效密码。"
+    initial_password_already_set: "账号已设置密码。如需修改，请使用重置密码功能。"

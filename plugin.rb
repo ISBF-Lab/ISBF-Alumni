@@ -17,6 +17,8 @@ after_initialize do
   require_relative "lib/isbf_alumni/registration"
   require_relative "lib/isbf_alumni/proofs"
   require_relative "lib/isbf_alumni/registration_controller"
+  require_relative "lib/isbf_alumni/invitation_metadata"
+  require_relative "lib/isbf_alumni/initial_passwords_controller"
   require_relative "app/models/isbf_alumni/application"
   require_relative "app/models/reviewable_isbf_alumni"
   require_relative "app/serializers/reviewable_isbf_alumni_serializer"
@@ -29,7 +31,8 @@ after_initialize do
   Invite.attr_accessor :isbf_alumni_application_id
   Reviewable.singleton_class.prepend(IsbfAlumni::ReviewScope)
   ReviewablesController.prepend(IsbfAlumni::ReviewMetadata)
-  Rails.application.config.filter_parameters += %i[code real_name graduation_year proof_ids]
+  InvitesController.prepend(IsbfAlumni::InvitationMetadata)
+  Rails.application.config.filter_parameters += %i[code real_name graduation_year proof_ids invite_key]
 
   IsbfAlumni::USER_FIELDS.each do |field|
     register_user_custom_field_type(field, :string, max_length: field == IsbfAlumni::BIO_FIELD ? 500 : 256)
@@ -44,6 +47,7 @@ after_initialize do
   end
 
   IsbfAlumni::Engine.routes.draw do
+    put "/initial-password" => "initial_passwords#update"
     get "/registration-config" => "registration#configuration"
     post "/applications/email" => "registration#email"
     post "/applications/verify-email" => "registration#verify_email"

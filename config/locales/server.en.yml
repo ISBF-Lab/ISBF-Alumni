@@ -2,3 +2,5 @@ en:
   isbf_alumni:
     unavailable: "The alumni network is not available."
     invalid_profile: "Please check the alumni profile fields."
+    initial_password_invalid: "Please enter a valid password."
+    initial_password_already_set: "A password is already set. Use the password reset option to change it."
