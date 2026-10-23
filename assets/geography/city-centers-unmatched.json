@@ -1,0 +1,52 @@
+[
+  {
+    "region": "NM",
+    "code": "1522",
+    "name": "兴安盟"
+  },
+  {
+    "region": "NM",
+    "code": "1529",
+    "name": "阿拉善盟"
+  },
+  {
+    "region": "AH",
+    "code": "3405",
+    "name": "马鞍山市"
+  },
+  {
+    "region": "GX",
+    "code": "4503",
+    "name": "桂林市"
+  },
+  {
+    "region": "SC",
+    "code": "5134",
+    "name": "凉山彝族自治州"
+  },
+  {
+    "region": "GZ",
+    "code": "5227",
+    "name": "黔南布依族苗族自治州"
+  },
+  {
+    "region": "QH",
+    "code": "6302",
+    "name": "海东市"
+  },
+  {
+    "region": "QH",
+    "code": "6322",
+    "name": "海北藏族自治州"
+  },
+  {
+    "region": "XJ",
+    "code": "659002",
+    "name": "阿拉尔市"
+  },
+  {
+    "region": "XJ",
+    "code": "659005",
+    "name": "北屯市"
+  }
+]
