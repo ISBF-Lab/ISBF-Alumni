@@ -124,7 +124,7 @@ RSpec.describe "ISBF Alumni invitation metadata", type: :request do
       expect(invite.reload).to be_redeemed
       password = "native-fixture-#{SecureRandom.hex(16)}"
       if with_password
-        put "/isbf/alumni/initial-password.json", params: { password: password }
+        put "/isbf/alumni/initial-password.json", params: { password: password, invite_key: invite.invite_key }
         expect(response.status).to eq(200), response.body
         expect(created.reload.confirm_password?(password)).to eq(true)
       end

@@ -55,9 +55,11 @@ module("Alumni invitation password | real CodeLoginForm", function (hooks) {
     this.siteSettings.enable_random_usernames = false;
     this.created = 0;
     this.passwordWrites = [];
+    this.invitationWrites = [];
     this.sequence = [];
     this.generatedUsername = false;
     this.passwordStatus = 200;
+    this.passwordErrorType = "unknown";
     this.codeError = false;
 
     pretender.get("/session/hp.json", () =>
@@ -92,11 +94,17 @@ module("Alumni invitation password | real CodeLoginForm", function (hooks) {
       this.passwordWrites.push(
         new URLSearchParams(request.requestBody).get("password")
       );
+      this.invitationWrites.push(
+        new URLSearchParams(request.requestBody).get("invite_key")
+      );
       return response(
         this.passwordStatus,
         this.passwordStatus === 200
           ? { success: "OK" }
-          : { errors: ["Fixture password save error"] }
+          : {
+              errors: ["Fixture password save error"],
+              error_type: this.passwordErrorType,
+            }
       );
     });
   });
@@ -252,6 +260,7 @@ module("Alumni invitation password | real CodeLoginForm", function (hooks) {
     await click(".code-login-form__continue-to-site");
     assert.deepEqual(this.sequence.slice(-3), ["created", "csrf", "password"]);
     assert.deepEqual(this.passwordWrites, [PASSWORD]);
+    assert.deepEqual(this.invitationWrites, [this.invitation.token]);
     assert.true(
       this.onAuthenticated.calledOnceWithExactly({
         accountCreated: true,
@@ -300,7 +309,8 @@ module("Alumni invitation password | real CodeLoginForm", function (hooks) {
   });
 
   test("session expiry clears secret and offers existing login", async function (assert) {
-    this.passwordStatus = 401;
+    this.passwordStatus = 403;
+    this.passwordErrorType = "not_logged_in";
     const destruction = sinon.spy(
       IsbfAlumniInviteForm.prototype,
       "willDestroy"

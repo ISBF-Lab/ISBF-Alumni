@@ -6,12 +6,7 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
   fab!(:alumni_group) { Fabricate(:group, name: "alumni") }
   fab!(:user)
   let(:password) { "test-only-#{SecureRandom.hex(16)}" }
-  let!(:application) do
-    IsbfAlumni::Application.create!(
-      email: user.email, email_verified_at: Time.current, status: "registered",
-      user: user, registered_at: Time.current,
-    )
-  end
+  let(:application) { registered_application_for(user) }
 
   before do
     SiteSetting.isbf_alumni_enabled = true
@@ -19,14 +14,25 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     SiteSetting.enable_local_logins = true
     SiteSetting.enable_discourse_connect = false
     alumni_group.add(user)
+    application
     user.update!(approved: true)
     user.user_password&.destroy!
     user.reload
+    user.activate
     sign_in(user)
   end
 
   def set_password(value = password, **extra)
-    put "/isbf/alumni/initial-password.json", params: { password: value, **extra }
+    put "/isbf/alumni/initial-password.json", params: { password: value, invite_key: application.invite.invite_key, **extra }
+  end
+
+  def registered_application_for(account)
+    record = IsbfAlumni::Application.create!(email: account.email, email_verified_at: Time.current, status: "approved")
+    invitation = Invite.new(email: account.email, invited_by: Discourse.system_user, max_redemptions_allowed: 1, expires_at: 7.days.from_now, emailed_status: Invite.emailed_status_types[:not_required])
+    invitation.isbf_alumni_application_id = record.id
+    invitation.save!
+    record.update!(invite: invitation, user: account, status: "registered", registered_at: Time.current)
+    record
   end
 
   it "sets a native password and keeps the current browser authenticated" do
@@ -84,6 +90,30 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     expect(response.status).to eq(200), response.body
     expect(user.reload.confirm_password?(password)).to eq(true)
     expect(other.reload.user_password.password_hash).to eq(previous_hash)
+  end
+
+  it "rejects a missing or different page invitation" do
+    [nil, "different-invitation-fixture"].each do |key|
+      set_password(password, invite_key: key)
+      expect(response.status).to eq(403), response.body
+      expect(user.reload.has_password?).to eq(false)
+    end
+  end
+
+  it "cannot save a previous tab's password to another registered Alumni account" do
+    other = Fabricate(:user, approved: true)
+    alumni_group.add(other)
+    other_application = registered_application_for(other)
+    other.user_password.destroy!
+    other.reload
+    sign_in(other)
+    set_password
+    expect(response.status).to eq(403), response.body
+    expect(user.reload.has_password?).to eq(false)
+    expect(other.reload.has_password?).to eq(false)
+    set_password(password, invite_key: other_application.invite.invite_key)
+    expect(response.status).to eq(200), response.body
+    expect(other.reload.confirm_password?(password)).to eq(true)
   end
 
   {

@@ -167,13 +167,20 @@ export default class IsbfAlumniInviteForm extends Component {
       }
       await ajax("/isbf/alumni/initial-password", {
         type: "PUT",
-        data: { password: this.accountPassword },
+        data: {
+          password: this.accountPassword,
+          invite_key: this.args.invitation.token,
+        },
       });
       saved = true;
     } catch (error) {
       if (!this.isDestroying) {
         const status = error.jqXHR?.status ?? error.status;
-        this.sessionExpired = status === 401;
+        const errorType =
+          error.jqXHR?.responseJSON?.error_type ??
+          error.responseJSON?.error_type;
+        this.sessionExpired =
+          status === 401 || (status === 403 && errorType === "not_logged_in");
         this.passwordConflict = status === 409;
         this.saveFailed = true;
         if (this.sessionExpired) {

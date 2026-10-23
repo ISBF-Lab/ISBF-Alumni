@@ -12,6 +12,8 @@ module IsbfAlumni
       RateLimiter.new(current_user, "isbf-alumni-initial-password", 10, 10.minutes, apply_limit_to_staff: true).performed!
       application = Application.find_by(user_id: current_user.id)
       raise Discourse::InvalidAccess unless application
+      invite_key = params[:invite_key]
+      raise Discourse::InvalidAccess unless invite_key.is_a?(String) && invite_key.present? && invite_key.bytesize <= 256
 
       password = params[:password]
       unless password.is_a?(String) && password.length <= User.max_password_length
@@ -22,11 +24,13 @@ module IsbfAlumni
       application.with_lock do
         current_user.with_lock do
           user = current_user
+          invite = Invite.with_deleted.find_by(id: application.invite_id)
           unless application.status == "registered" && application.user_id == user.id &&
               application.registered_at.present? && application.email_verified_at.present? &&
               application.email.casecmp?(user.email.to_s) && user.active? && user.guardian.can_access_forum? &&
               !user.staged? && !user.suspended? && !user.silenced? && user.id.positive? &&
-              IsbfAlumni.member?(user)
+              IsbfAlumni.member?(user) && invite &&
+              ActiveSupport::SecurityUtils.secure_compare(invite.invite_key, invite_key)
             raise Discourse::InvalidAccess
           end
 

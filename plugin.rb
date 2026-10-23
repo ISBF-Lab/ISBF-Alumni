@@ -32,7 +32,7 @@ after_initialize do
   Reviewable.singleton_class.prepend(IsbfAlumni::ReviewScope)
   ReviewablesController.prepend(IsbfAlumni::ReviewMetadata)
   InvitesController.prepend(IsbfAlumni::InvitationMetadata)
-  Rails.application.config.filter_parameters += %i[code real_name graduation_year proof_ids]
+  Rails.application.config.filter_parameters += %i[code real_name graduation_year proof_ids invite_key]
 
   IsbfAlumni::USER_FIELDS.each do |field|
     register_user_custom_field_type(field, :string, max_length: field == IsbfAlumni::BIO_FIELD ? 500 : 256)
