@@ -4,9 +4,9 @@ require "rails_helper"
 
 RSpec.describe "ISBF Alumni initial password", type: :request do
   fab!(:alumni_group) { Fabricate(:group, name: "alumni") }
-  fab!(:user)
+  let(:user) { application.user }
   let(:password) { "test-only-#{SecureRandom.hex(16)}" }
-  let(:application) { registered_application_for(user) }
+  let(:application) { registered_application }
 
   before do
     SiteSetting.isbf_alumni_enabled = true
@@ -26,11 +26,13 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
     put "/isbf/alumni/initial-password.json", params: { password: value, invite_key: application.invite.invite_key, **extra }
   end
 
-  def registered_application_for(account)
-    record = IsbfAlumni::Application.create!(email: account.email, email_verified_at: Time.current, status: "approved")
-    invitation = Invite.new(email: account.email, invited_by: Discourse.system_user, max_redemptions_allowed: 1, expires_at: 7.days.from_now, emailed_status: Invite.emailed_status_types[:not_required])
+  def registered_application
+    email = "initial-password-#{SecureRandom.hex(8)}@example.com"
+    record = IsbfAlumni::Application.create!(email: email, email_verified_at: Time.current, status: "approved")
+    invitation = Invite.new(email: email, invited_by: Discourse.system_user, max_redemptions_allowed: 1, expires_at: 7.days.from_now, emailed_status: Invite.emailed_status_types[:not_required])
     invitation.isbf_alumni_application_id = record.id
     invitation.save!
+    account = Fabricate(:user, email: email, approved: true)
     record.update!(invite: invitation, user: account, status: "registered", registered_at: Time.current)
     record
   end
@@ -101,9 +103,9 @@ RSpec.describe "ISBF Alumni initial password", type: :request do
   end
 
   it "cannot save a previous tab's password to another registered Alumni account" do
-    other = Fabricate(:user, approved: true)
+    other_application = registered_application
+    other = other_application.user
     alumni_group.add(other)
-    other_application = registered_application_for(other)
     other.user_password.destroy!
     other.reload
     sign_in(other)
