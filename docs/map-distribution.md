@@ -1,0 +1,9 @@
+# Alumni map distribution
+
+`GET /isbf/alumni/distribution.json?country=CN&region=GD` uses the directory's login, availability, active viewer checks, geographic filter validation and shared 90 requests/minute native rate limiter. Any eligible logged-in viewer may read aggregate public profiles. Responses use `Cache-Control: private, no-store`; no cross-user cache or identifying user records are returned.
+
+The response contains normalized `country` and `region` (empty strings when not selected), filtered `total`, global `countries: [{code,count}]`, all Chinese `regions: [{code,count}]` when China is selected, and `cities: [{code,count}]` when a Chinese region is selected. Empty regions are omitted and represented as zero by the client catalog. Invalid or missing location IDs count in the eligible total but never create a map entry. Profiles without a city still count toward their province and country. Overseas free-text cities are not geocoded or returned.
+
+Directory and distribution share native alumni group membership, `visible=true`, active and approved user eligibility. SQL subqueries avoid duplicate membership/visibility inflation; each location field uses its latest record by ID, including directory filtering and serialization. Legacy HK/MO/TW values normalize to Chinese regions without rewriting stored data. Aggregation groups location codes in PostgreSQL and never hydrates an unbounded collection of User records. Directory pagination remains unchanged and does not limit distribution counts.
+
+Both theme and backend changes must pass CI before release. Deploy the compatible backend first, then patch the theme against recorded source hashes. No database migration or Core changes are required. The user-facing legend is 0, 1–5, 6–10, 11–20 and 21+ people; city points use catalog centers, never private addresses.

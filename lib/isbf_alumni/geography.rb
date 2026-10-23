@@ -30,6 +30,25 @@ module IsbfAlumni
         end
       end
 
+      def map_catalog
+        @map_catalog ||= begin
+          mapped_countries = countries.map do |item|
+            next item unless item["code"] == "CN"
+            provinces = item.fetch("regions").map do |province|
+              province.merge("cities" => city_centers(item["code"], province["code"]))
+            end
+            item.merge("regions" => provinces)
+          end
+          catalog.merge("countries" => mapped_countries)
+        end
+      end
+
+      def city_centers(country_code, region_code)
+        return [] unless country_code.to_s.upcase == "CN"
+        @city_centers ||= JSON.parse(File.read(File.join(DATA_ROOT, "city-centers.json"), encoding: "UTF-8"))
+        @city_centers.fetch(region_code.to_s.upcase, [])
+      end
+
       def countries
         catalog.fetch("countries")
       end

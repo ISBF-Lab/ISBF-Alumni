@@ -71,7 +71,7 @@ RSpec.describe "ISBF Alumni directory and profiles", type: :request do
     expect(countries.find { |country| country["code"] == "CN" }.fetch("regions")).to include(
       include("code" => "TW", "name" => "台湾省"),
     )
-    expect(countries.find { |country| country["code"] == "CN" }.fetch("regions")).to all(satisfy { |region| !region.key?("cities") })
+    expect(countries.find { |country| country["code"] == "CN" }.fetch("regions")).to all(include("cities" => be_an(Array)))
     expect(countries.reject { |country| country["code"] == "CN" }).to all(satisfy { |country| country.keys.sort == %w[code name] })
     get "/isbf/alumni/geography/regions/US.geojson"
     expect(response.status).to eq(404)

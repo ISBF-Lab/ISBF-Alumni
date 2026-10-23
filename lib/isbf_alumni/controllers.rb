@@ -20,7 +20,7 @@ module IsbfAlumni
     end
 
     def geography
-      render json: Geography.catalog
+      render json: Geography.map_catalog
     end
 
     def world
@@ -58,22 +58,24 @@ module IsbfAlumni
       page_number = page_number.to_i
       raise Discourse::InvalidParameters.new("page") if page_number > 1000
 
-      selected_country = nil
-      selected_region = nil
-      if country.present?
-        selected_country = Geography.country(country)
-        raise Discourse::InvalidParameters.new("country") unless selected_country
-      end
-      if region.present?
-        selected_region = Geography.region(selected_country, region)
-        raise Discourse::InvalidParameters.new("region") unless selected_region
-      end
+      validate_location_filters!(country, region)
       users, has_more = IsbfAlumni.directory(
         country_code: country,
         region_code: region,
         page: page_number,
       )
       render json: { users: users, page: page_number, has_more: has_more }
+    rescue Discourse::InvalidParameters => error
+      render_json_error(error.message, status: 422)
+    end
+
+    def distribution
+      RateLimiter.new(current_user, "isbf-alumni-directory", 90, 1.minute).performed!
+      country = code_param(:country, /\A[A-Z]{2}\z/)
+      region = code_param(:region, /\A[A-Z0-9]{1,3}\z/)
+      validate_location_filters!(country, region)
+      response.headers["Cache-Control"] = "private, no-store"
+      render json: IsbfAlumni.distribution(country_code: country, region_code: region)
     rescue Discourse::InvalidParameters => error
       render_json_error(error.message, status: 422)
     end
@@ -93,6 +95,14 @@ module IsbfAlumni
     end
 
     private
+
+    def validate_location_filters!(country, region)
+      selected_country = Geography.country(country) if country.present?
+      raise Discourse::InvalidParameters.new("country") if country.present? && !selected_country
+      if region.present? && !Geography.region(selected_country, region)
+        raise Discourse::InvalidParameters.new("region")
+      end
+    end
 
     def code_param(name, pattern)
       value = params[name]

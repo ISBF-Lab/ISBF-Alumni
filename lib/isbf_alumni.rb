@@ -161,39 +161,73 @@ module IsbfAlumni
       profile(user)
     end
 
-    def directory(country_code:, region_code:, page:)
+    def directory_scope(country_code: nil, region_code: nil)
       alumni_group = group
-      return [] unless available? && alumni_group
+      return User.none unless available? && alumni_group
 
       ids = GroupUser.where(group_id: alumni_group.id).select(:user_id)
       visible_ids = UserCustomField.where(name: VISIBLE_FIELD, value: "true").select(:user_id)
       scope = User.where(id: ids).where(id: visible_ids).where(active: true, approved: true)
+      { country: COUNTRY_FIELD, region: REGION_FIELD, city: CITY_CODE_FIELD }.each do |kind, field|
+        latest = UserCustomField.where(name: field)
+          .select("DISTINCT ON (user_id) user_id, value")
+          .order(:user_id, id: :desc)
+        scope = scope.joins("LEFT JOIN (#{latest.to_sql}) isbf_alumni_#{kind} ON isbf_alumni_#{kind}.user_id = users.id")
+      end
+      locations = directory_location_expressions
+      scope = scope.where("#{locations[:country]} = ?", country_code) if country_code.present?
+      scope = scope.where("#{locations[:region]} = ?", region_code) if region_code.present?
+      scope
+    end
 
-      if country_code.present?
-        current_location = scope.where(
-          id: UserCustomField.where(name: COUNTRY_FIELD, value: country_code).select(:user_id),
-        )
-        if region_code.present?
-          current_location = current_location.where(
-            id: UserCustomField.where(name: REGION_FIELD, value: region_code).select(:user_id),
-          )
-        end
-        legacy_codes = if country_code == "CN" && region_code.blank?
-          Geography::LEGACY_CHINA_CODES
-        elsif country_code == "CN" && Geography::LEGACY_CHINA_CODES.include?(region_code)
-          [region_code]
-        else
-          []
-        end
-        scope = if legacy_codes.any?
-          legacy_location = scope.where(
-            id: UserCustomField.where(name: COUNTRY_FIELD, value: legacy_codes).select(:user_id),
-          )
-          current_location.or(legacy_location)
-        else
-          current_location
+    def directory_location_expressions
+      country = "UPPER(COALESCE(isbf_alumni_country.value, ''))"
+      region = "UPPER(COALESCE(isbf_alumni_region.value, ''))"
+      legacy = Geography::LEGACY_CHINA_CODES.map { |code| User.connection.quote(code) }.join(", ")
+      {
+        country: "CASE WHEN #{country} IN (#{legacy}) THEN 'CN' ELSE #{country} END",
+        region: "CASE WHEN #{country} IN (#{legacy}) THEN #{country} ELSE #{region} END",
+        city: "COALESCE(isbf_alumni_city.value, '')",
+      }
+    end
+
+    def distribution(country_code:, region_code:)
+      locations = directory_location_expressions
+      counts = directory_scope.group(*locations.values.map { |sql| Arel.sql(sql) }).count
+      countries = Hash.new(0)
+      regions = Hash.new(0)
+      cities = Hash.new(0)
+      total = 0
+      china = Geography.country("CN")
+      counts.each do |(country, region, city), count|
+        selected = (country_code.blank? || country == country_code) && (region_code.blank? || region == region_code)
+        total += count if selected
+        countries[country] += count if Geography.country(country)
+        next unless country_code == "CN" && country == "CN" && Geography.region(china, region)
+
+        regions[region] += count
+        if region_code.present? && region == region_code && Geography.city("CN", region, city)
+          cities[city] += count
         end
       end
+      {
+        country: country_code.to_s,
+        region: region_code.to_s,
+        total: total,
+        countries: distribution_entries(countries),
+        regions: distribution_entries(regions),
+        cities: distribution_entries(cities),
+      }
+    end
+
+    def distribution_entries(counts)
+      counts.sort.map { |code, count| { code: code, count: count } }
+    end
+
+    def directory(country_code:, region_code:, page:)
+      scope = directory_scope(country_code: country_code, region_code: region_code)
+      locations = directory_location_expressions
+      scope = scope.select("users.*", *locations.map { |kind, sql| "#{sql} AS alumni_#{kind}_code" })
       users = scope.order(:id).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE + 1).to_a
       has_more = users.length > PAGE_SIZE
       users = users.first(PAGE_SIZE)
@@ -207,7 +241,9 @@ module IsbfAlumni
 
     def directory_entry(user)
       fields = user.preloaded_custom_fields || {}
-      country_code, region_code = Geography.normalize_location(fields[COUNTRY_FIELD], fields[REGION_FIELD])
+      country_code = user.read_attribute("alumni_country_code")
+      region_code = user.read_attribute("alumni_region_code")
+      city_code = user.read_attribute("alumni_city_code").to_s
       country = Geography.country(country_code)
       region = country && Geography.region(country, region_code)
 
@@ -219,8 +255,8 @@ module IsbfAlumni
         country_name: country&.fetch("name", nil) || Geography::RETIRED_COUNTRY_NAMES[country_code],
         region_code: region_code,
         region_name: region&.fetch("name", nil),
-        city_code: fields[CITY_CODE_FIELD].to_s,
-        city_name: country_code == "CN" ? Geography.city(country_code, region_code, fields[CITY_CODE_FIELD])&.fetch("name", "").to_s : fields[CITY_NAME_FIELD].to_s,
+        city_code: city_code,
+        city_name: country_code == "CN" ? Geography.city(country_code, region_code, city_code)&.fetch("name", "").to_s : fields[CITY_NAME_FIELD].to_s,
         bio: fields[BIO_FIELD].to_s,
         industry: fields[INDUSTRY_FIELD].to_s,
       }

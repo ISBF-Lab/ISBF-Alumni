@@ -65,6 +65,7 @@ after_initialize do
     get "/vendor/leaflet.css" => "alumni#leaflet_css"
     get "/vendor/leaflet/images/:image" => "alumni#leaflet_image", constraints: { image: /(?:marker-icon(?:-2x)?|marker-shadow|layers(?:-2x)?).png/ }
     get "/directory" => "alumni#directory"
+    get "/distribution" => "alumni#distribution"
     get "/me" => "alumni#show_profile"
     put "/me" => "alumni#update_profile"
   end
