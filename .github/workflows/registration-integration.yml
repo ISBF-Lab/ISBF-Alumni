@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ISBF-Lab/ISBFweb
-          ref: 604ea93d6f5f79f8bc855e31ea48b8aad34526ab
+          ref: 2c936a041da1f30f55227de67630abbd6113af83
           ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
           path: discourse
           persist-credentials: false
@@ -81,10 +81,10 @@ jobs:
           dbus-daemon --system --fork 2>/dev/null || true
           isbf_bus_address=$(dbus-daemon --session --fork --print-address 2>/dev/null)
           echo "DBUS_SESSION_BUS_ADDRESS=$isbf_bus_address" >> "$GITHUB_ENV"
-      - name: Native Alumni invitation password UI
+      - name: Native alumni invitation and email verification UI
         if: always() && steps.native_assets.outcome == 'success'
         run: |
-          bin/qunit --standalone --target isbf-alumni --filter '/Alumni invitation password/i' | tee tmp/alumni-password-qunit.log
+          bin/qunit --standalone --target isbf-alumni --filter '/Alumni invitation password|Alumni registration/i' | tee tmp/alumni-password-qunit.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
