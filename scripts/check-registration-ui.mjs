@@ -39,6 +39,9 @@ const context = {
   Date,
   encodeURIComponent,
   i18n: (key) => key,
+  waitForOtpFeedback: () => Promise.resolve(),
+  schedule: (_queue, target, callback) =>
+    Promise.resolve().then(() => callback.call(target)),
   extractError: (error) => error.message,
   ajax: (url, options) => {
     assert.ok(

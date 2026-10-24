@@ -1,12 +1,16 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { fn } from "@ember/helper";
+import { fn, hash } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
+import { schedule } from "@ember/runloop";
+import Form from "discourse/components/form";
 import { ajax } from "discourse/lib/ajax";
 import { extractError } from "discourse/lib/ajax-error";
+import waitForOtpFeedback from "discourse/lib/otp-feedback";
 import { eq, not } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
+import DOtp from "discourse/ui-kit/d-otp";
 import { i18n } from "discourse-i18n";
 
 const BASE = "/isbf/alumni";
@@ -26,6 +30,8 @@ export default class IsbfAlumniRegistration extends Component {
   @tracked application;
   @tracked busy = false;
   @tracked code = "";
+  @tracked codeStatus = "idle";
+  @tracked otpGeneration = 0;
   @tracked config;
   @tracked email = "";
   @tracked error;
@@ -38,7 +44,7 @@ export default class IsbfAlumniRegistration extends Component {
 
   constructor() {
     super(...arguments);
-    this.load();
+    schedule("afterRender", this, this.load);
   }
 
   willDestroy() {
@@ -52,6 +58,18 @@ export default class IsbfAlumniRegistration extends Component {
     this.form = { ...EMPTY };
     this.proofs = [];
     this.application = null;
+  }
+
+  get otpGenerationArray() {
+    return [this.otpGeneration];
+  }
+
+  get verificationBusy() {
+    return this.busy || this.codeStatus !== "idle";
+  }
+
+  get verifyDisabled() {
+    return this.verificationBusy || !/^\d{6}$/.test(this.code);
   }
 
   get regions() {
@@ -135,8 +153,14 @@ export default class IsbfAlumniRegistration extends Component {
   }
 
   @action
-  updateCode(event) {
-    this.code = event.target.value;
+  updateCode(setValue, code) {
+    const rejecting = this.codeStatus === "error";
+    this.code = code;
+    this.codeStatus = "idle";
+    setValue(code);
+    if (!rejecting) {
+      this.error = null;
+    }
   }
 
   @action
@@ -147,6 +171,9 @@ export default class IsbfAlumniRegistration extends Component {
         type: "POST",
         data: { email: this.email.trim() },
       });
+      this.code = "";
+      this.codeStatus = "idle";
+      this.otpGeneration++;
       this.step = "code";
       this.notice = i18n("isbf_alumni.registration.code_sent");
     });
@@ -154,14 +181,33 @@ export default class IsbfAlumniRegistration extends Component {
 
   @action
   async verify(event) {
-    event?.preventDefault();
+    event?.preventDefault?.();
+    if (this.verifyDisabled) {
+      return;
+    }
     await this.#run(async () => {
-      const current = await this.#request("/applications/verify-email", {
-        type: "POST",
-        data: { code: this.code.trim() },
-      });
-      this.#restore({ ...current, verified: true });
-      this.code = "";
+      try {
+        const current = await this.#request("/applications/verify-email", {
+          type: "POST",
+          data: { code: this.code.trim() },
+        });
+        this.codeStatus = "success";
+        await waitForOtpFeedback(this);
+        if (this.isDestroying) {
+          return;
+        }
+        this.#restore({ ...current, verified: true });
+        this.code = "";
+        this.codeStatus = "idle";
+      } catch (error) {
+        if (
+          !this.isDestroying &&
+          (error.jqXHR?.status ?? error.status) === 422
+        ) {
+          this.codeStatus = "error";
+        }
+        throw error;
+      }
     });
   }
 
@@ -275,7 +321,7 @@ export default class IsbfAlumniRegistration extends Component {
   }
 
   async #run(callback) {
-    if (this.busy) {
+    if (this.isDestroying || this.busy) {
       return;
     }
     this.busy = true;
@@ -297,7 +343,10 @@ export default class IsbfAlumniRegistration extends Component {
   <template>
     <section aria-busy={{this.busy}} class="isbf-alumni-registration">
       <h1>{{i18n "isbf_alumni.registration.title"}}</h1>
-      {{#if this.error}}<p role="alert">{{this.error}}</p>{{/if}}
+      {{#if this.error}}<p
+          id="alumni-registration-error"
+          role="alert"
+        >{{this.error}}</p>{{/if}}
       {{#if this.notice}}<p role="status">{{this.notice}}</p>{{/if}}
       {{#if (eq this.step "loading")}}
         {{#if this.error}}<DButton
@@ -324,28 +373,48 @@ export default class IsbfAlumniRegistration extends Component {
           >{{i18n "isbf_alumni.registration.send_code"}}</button>
         </form>
       {{else if (eq this.step "code")}}
-        <form {{on "submit" this.verify}}>
+        <Form
+          class="isbf-alumni-registration__code"
+          @data={{hash code=this.code}}
+          @onSubmit={{this.verify}}
+          as |form|
+        >
           <p>{{this.email}}</p>
-          <label>{{i18n "isbf_alumni.registration.code"}}<input
-              autocomplete="one-time-code"
-              disabled={{this.busy}}
-              inputmode="numeric"
-              maxlength="12"
-              required
-              value={{this.code}}
-              {{on "input" this.updateCode}}
-            /></label>
-          <button
-            class="btn btn-primary"
-            disabled={{this.busy}}
-            type="submit"
-          >{{i18n "isbf_alumni.registration.verify"}}</button>
+          <form.Field
+            @name="code"
+            @title={{i18n "isbf_alumni.registration.code"}}
+            @type="custom"
+            @validation="required"
+            as |field|
+          >
+            <field.Control>
+              {{#each this.otpGenerationArray as |generation|}}
+                <DOtp
+                  aria-label={{i18n "isbf_alumni.registration.code"}}
+                  data-generation={{generation}}
+                  id={{field.id}}
+                  @describedBy="alumni-registration-error"
+                  @disabled={{this.busy}}
+                  @invalid={{this.error}}
+                  @onChange={{fn this.updateCode field.set}}
+                  @onFill={{this.verify}}
+                  @status={{this.codeStatus}}
+                  @value={{this.code}}
+                  @variant="animated"
+                />
+              {{/each}}
+            </field.Control>
+          </form.Field>
+          <form.Submit
+            @disabled={{this.verifyDisabled}}
+            @label="isbf_alumni.registration.verify"
+          />
           <DButton
             @action={{this.sendCode}}
-            @disabled={{this.busy}}
+            @disabled={{this.verificationBusy}}
             @label="isbf_alumni.registration.send_again"
           />
-        </form>
+        </Form>
       {{else if this.editable}}
         {{#if this.application.rejection_reason}}<p
             class="isbf-alumni-registration__rejection"
