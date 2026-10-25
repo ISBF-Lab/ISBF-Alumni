@@ -12,7 +12,7 @@ module IsbfAlumni
   module ReviewMetadata
     private
 
-    def render_json_dump(object, *args, **options)
+    def render_json_dump(object, *args)
       if !Registration.reviewer?(current_user) && object.is_a?(Hash) && object[:meta].is_a?(Hash)
         object[:meta][:reviewable_types] = Array(object[:meta][:reviewable_types]).reject do |type|
           type.to_s == "ReviewableIsbfAlumni"
