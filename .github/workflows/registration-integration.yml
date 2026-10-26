@@ -16,7 +16,8 @@ concurrency:
 jobs:
   registration:
     runs-on: ubuntu-latest
-    container: discourse/discourse_test:release
+    # The pinned Core requires Ruby 3.4; the release tag now supplies Ruby 4.
+    container: discourse/discourse_test@sha256:94eca5318fed6171264b95204914de76a113c305cebb72d9fa9527e2c4496494
     timeout-minutes: 35
     defaults:
       run:
