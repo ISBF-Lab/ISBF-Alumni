@@ -16,7 +16,7 @@ concurrency:
 jobs:
   registration:
     runs-on: ubuntu-latest
-    container: discourse/discourse_test:release
+    container: discourse/discourse_test@sha256:94eca5318fed6171264b95204914de76a113c305cebb72d9fa9527e2c4496494
     timeout-minutes: 35
     defaults:
       run:
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ISBF-Lab/ISBFweb
-          ref: 211f043f51681951bbb6d562ca9df66ea73366c6
+          ref: 639077b4c1ddce597a7ecd26a6e7effdebbeed46
           ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
           path: discourse
           persist-credentials: false
@@ -62,6 +62,8 @@ jobs:
           bundle config --local without ""
           bundle install --jobs 1
           pnpm install --frozen-lockfile
+      - name: Shared dropdown policy
+        run: pnpm lint:menus
       - name: Migrate test data and verify native HEIC decoding
         id: database
         run: |
