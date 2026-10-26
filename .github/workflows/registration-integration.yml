@@ -48,6 +48,17 @@ jobs:
           ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
           path: discourse
           persist-credentials: false
+      - name: Check out the alumni identity theme
+        uses: actions/checkout@v4
+        with:
+          repository: ISBF-Lab/ISBF-UI
+          ref: cf268ca9071700e9955f56ebd09f786f7c9d0c99
+          path: identity-theme
+          persist-credentials: false
+      - name: Prepare the native theme system tests
+        run: |
+          mkdir -p tmp/themes
+          cp -a ../identity-theme tmp/themes/isbf-campus
       - name: Prepare native Discourse and the plugin
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE/discourse"
@@ -85,6 +96,21 @@ jobs:
         if: always() && steps.native_assets.outcome == 'success'
         run: |
           bin/qunit --standalone --target isbf-alumni --filter '/Alumni invitation password|Alumni registration/i' | tee tmp/alumni-password-qunit.log
+      - name: Native alumni identity labels across real theme pages
+        if: always() && steps.native_assets.outcome == 'success'
+        run: |
+          bin/rspec tmp/themes/isbf-campus/spec/system/alumni_identity_spec.rb | tee tmp/alumni-identity-system.log
+      - name: Save native alumni identity system results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: alumni-identity-system-results-${{ github.run_id }}
+          path: |
+            discourse/tmp/alumni-identity-system.log
+            discourse/tmp/isbf-alumni-identity-results/
+            discourse/tmp/capybara/
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
