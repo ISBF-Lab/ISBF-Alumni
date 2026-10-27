@@ -53,7 +53,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ISBF-Lab/ISBF-UI
-          ref: d80129bc78dff595009bd0bd6204a14de2f3208d
+          ref: b29a97141bb5c91fa61dd6bdf1b584dbcbc64636
           path: identity-theme
           persist-credentials: false
       - name: Prepare the native theme system tests
