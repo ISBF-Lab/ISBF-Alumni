@@ -11,6 +11,7 @@ import waitForOtpFeedback from "discourse/lib/otp-feedback";
 import { eq, not } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import DOtp from "discourse/ui-kit/d-otp";
+import DSelect from "discourse/ui-kit/d-select";
 import { i18n } from "discourse-i18n";
 
 const BASE = "/isbf/alumni";
@@ -428,42 +429,49 @@ export default class IsbfAlumniRegistration extends Component {
                 value={{this.form.real_name}}
                 {{on "input" (fn this.update "real_name")}}
               /></label>
-            <label>{{i18n "isbf_alumni.registration.graduation_year"}}<select
+            <label>{{i18n "isbf_alumni.registration.graduation_year"}}<DSelect
                 required
-                {{on "change" (fn this.update "graduation_year")}}
+                @includeNone={{false}}
+                @onInput={{fn this.update "graduation_year"}}
               ><option value="">—</option>{{#each this.years as |year|}}<option
                     selected={{eq this.form.graduation_year year}}
                     value={{year}}
-                  >{{year}}</option>{{/each}}</select></label>
+                  >{{year}}</option>{{/each}}</DSelect></label>
             <p>{{this.email}}</p>
-            <label>{{i18n "isbf_alumni.registration.country"}}<select
-                {{on "change" (fn this.update "country_code")}}
+            <label>{{i18n "isbf_alumni.registration.country"}}<DSelect
+                @includeNone={{false}}
+                @onInput={{fn this.update "country_code"}}
               ><option value="">—</option>{{#each
                   this.config.countries
                   as |country|
                 }}<option
                     selected={{eq country.code this.form.country_code}}
                     value={{country.code}}
-                  >{{country.name}}</option>{{/each}}</select></label>
+                  >{{country.name}}</option>{{/each}}</DSelect></label>
             {{#if this.regions.length}}<label>{{i18n
                   "isbf_alumni.registration.region"
-                }}<select {{on "change" (fn this.update "region_code")}}><option
-                    value=""
-                  >—</option>{{#each this.regions as |region|}}<option
+                }}<DSelect
+                  @includeNone={{false}}
+                  @onInput={{fn this.update "region_code"}}
+                ><option value="">—</option>{{#each
+                    this.regions
+                    as |region|
+                  }}<option
                       selected={{eq region.code this.form.region_code}}
                       value={{region.code}}
-                    >{{region.name}}</option>{{/each}}</select></label>{{/if}}
+                    >{{region.name}}</option>{{/each}}</DSelect></label>{{/if}}
             <label>{{i18n "isbf_alumni.registration.city"}}
-              {{#if this.chineseCity}}<select
+              {{#if this.chineseCity}}<DSelect
                   disabled={{not this.cities.length}}
-                  {{on "change" (fn this.update "city_code")}}
+                  @includeNone={{false}}
+                  @onInput={{fn this.update "city_code"}}
                 ><option value="">—</option>{{#each
                     this.cities
                     as |city|
                   }}<option
                       selected={{eq city.code this.form.city_code}}
                       value={{city.code}}
-                    >{{city.name}}</option>{{/each}}</select>
+                    >{{city.name}}</option>{{/each}}</DSelect>
               {{else}}<input
                   maxlength="80"
                   value={{this.form.city_name}}
