@@ -16,6 +16,7 @@ concurrency:
 jobs:
   registration:
     runs-on: ubuntu-latest
+    # The pinned Core requires Ruby 3.4; the release tag now supplies Ruby 4.
     container: discourse/discourse_test@sha256:94eca5318fed6171264b95204914de76a113c305cebb72d9fa9527e2c4496494
     timeout-minutes: 35
     defaults:
@@ -48,6 +49,17 @@ jobs:
           ssh-key: ${{ secrets.ISBFWEB_CI_READ_KEY }}
           path: discourse
           persist-credentials: false
+      - name: Check out the alumni identity theme
+        uses: actions/checkout@v4
+        with:
+          repository: ISBF-Lab/ISBF-UI
+          ref: d7bb47b02af97d206849228deea7f4b46eef8481
+          path: identity-theme
+          persist-credentials: false
+      - name: Prepare the native theme system tests
+        run: |
+          mkdir -p tmp/themes
+          cp -a ../identity-theme tmp/themes/isbf-campus
       - name: Prepare native Discourse and the plugin
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE/discourse"
@@ -87,6 +99,10 @@ jobs:
         if: always() && steps.native_assets.outcome == 'success'
         run: |
           bin/qunit --standalone --target isbf-alumni --filter '/Alumni invitation password|Alumni registration/i' | tee tmp/alumni-password-qunit.log
+      - name: Native alumni identity labels across real theme pages
+        if: always() && steps.native_assets.outcome == 'success'
+        run: |
+          bin/rspec tmp/themes/isbf-campus/spec/system/alumni_identity_spec.rb --fail-fast | tee tmp/alumni-identity-system.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -14,6 +14,7 @@ after_initialize do
   require_relative "lib/isbf_alumni"
   require_relative "lib/isbf_alumni/geography"
   require_relative "lib/isbf_alumni/controllers"
+  require_relative "lib/isbf_alumni/identities_controller"
   require_relative "lib/isbf_alumni/registration"
   require_relative "lib/isbf_alumni/proofs"
   require_relative "lib/isbf_alumni/registration_controller"
@@ -64,6 +65,7 @@ after_initialize do
     get "/vendor/leaflet.js" => "alumni#leaflet_js"
     get "/vendor/leaflet.css" => "alumni#leaflet_css"
     get "/vendor/leaflet/images/:image" => "alumni#leaflet_image", constraints: { image: /(?:marker-icon(?:-2x)?|marker-shadow|layers(?:-2x)?).png/ }
+    get "/identities" => "identities#index"
     get "/directory" => "alumni#directory"
     get "/distribution" => "alumni#distribution"
     get "/me" => "alumni#show_profile"
