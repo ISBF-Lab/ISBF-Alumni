@@ -55,7 +55,7 @@ RSpec.describe "ISBF Alumni identities", type: :request do
   end
 
   it "does not treat a pending application as membership" do
-    IsbfAlumni::Application.create!(email: viewer.email, user: viewer, status: "pending")
+    IsbfAlumni::Application.create!(email: viewer.email, user: viewer, status: "pending", email_verified_at: Time.current)
     identities([viewer.id])
     expect_memberships(viewer.id.to_s => false)
   end
@@ -102,12 +102,18 @@ RSpec.describe "ISBF Alumni identities", type: :request do
     expect(batched.size).to be <= baseline.size
   end
 
-  [nil, [], "1", { "id" => "1" }, ["0"], ["-1"], ["01"], ["+1"], ["1.0"], ["1e2"], [" 1"], ["alumni"], ["2147483648"], ["9" * 100], [["1"]], [{ "id" => "1" }], ["1"] * 101].each do |invalid|
+  [nil, [], "1", { "id" => "1" }, ["0"], ["-1"], ["01"], ["+1"], ["1.0"], ["1e2"], [" 1"], ["alumni"], ["2147483648"], ["9" * 100], [{ "id" => "1" }], ["1"] * 101].each do |invalid|
     it "rejects malformed or oversized ID input #{invalid.inspect.truncate(80)}" do
       identities(invalid)
       expect(response.status).to eq(422), response.body
       expect(response.parsed_body).not_to have_key("memberships")
     end
+  end
+
+  it "rejects nested ID arrays when the request encoding preserves their shape" do
+    get "/isbf/alumni/identities.json", params: { user_ids: [["1"]] }, as: :json
+    expect(response.status).to eq(422), response.body
+    expect(response.parsed_body).not_to have_key("memberships")
   end
 
   it "rejects system account IDs" do
