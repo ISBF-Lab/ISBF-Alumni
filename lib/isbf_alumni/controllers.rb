@@ -13,6 +13,7 @@ module IsbfAlumni
     skip_before_action :check_xhr, only: %i[page world regions leaflet_js leaflet_css leaflet_image]
     # This action serves immutable library code, never account or profile data.
     skip_after_action :verify_same_origin_request, only: :leaflet_js
+    prepend_before_action { IsbfAlumni.ensure_workbench_available! }
     before_action :ensure_available!
 
     def page

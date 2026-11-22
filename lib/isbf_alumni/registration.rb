@@ -144,6 +144,7 @@ module IsbfAlumni
       end
 
       def approve!(application, reviewer)
+        IsbfAlumni.ensure_workbench_available!
         raise Discourse::InvalidAccess unless reviewer?(reviewer)
         application.with_lock do
           raise RegistrationError.new(:application_locked) unless application.status == "pending"
@@ -155,6 +156,7 @@ module IsbfAlumni
       end
 
       def reject!(application, reviewer, reason)
+        IsbfAlumni.ensure_workbench_available!
         raise Discourse::InvalidAccess unless reviewer?(reviewer)
         reason = IsbfAlumni.text(reason, 2000, required: true)
         application.with_lock do
@@ -194,6 +196,7 @@ module IsbfAlumni
       end
 
       def redeem(invite:, email:, redeeming_user:)
+        IsbfAlumni.ensure_workbench_available!
         application = Application.find_by(invite_id: invite.id)
         raise Discourse::InvalidAccess unless application && redeeming_user.blank?
         application.with_lock do

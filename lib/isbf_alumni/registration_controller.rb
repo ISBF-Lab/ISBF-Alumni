@@ -5,6 +5,7 @@ module IsbfAlumni
     requires_plugin "isbf-alumni"
     skip_before_action :redirect_to_login_if_required, raise: false
     skip_before_action :check_xhr, only: :proof
+    prepend_before_action { IsbfAlumni.ensure_workbench_available! }
     before_action :set_private_headers
     before_action :ensure_registration, except: :proof
     before_action :ensure_new_account, except: %i[configuration proof]
