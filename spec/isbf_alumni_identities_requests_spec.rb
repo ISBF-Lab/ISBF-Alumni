@@ -31,6 +31,33 @@ RSpec.describe "ISBF Alumni identities", type: :request do
     expect(response.body).not_to include(member.username, member.email, "proof", "application", "display_name")
   end
 
+  it "pauses the workbench directory, registration and identity endpoints" do
+    sign_in(member)
+    maintenance = Module.new do
+      def self.ensure_available!(key)
+        raise Discourse::NotFound if key == :alumni
+      end
+    end
+    stub_const(Object, :IsbfWorkbenchMaintenance, maintenance) do
+      %w[/isbf/alumni /isbf/alumni/directory.json /isbf/alumni/geography.json /isbf/alumni/me.json
+         /isbf/alumni/registration-config.json /isbf/alumni/application-proofs/1].each do |path|
+        get path
+        expect(response.status).to eq(404)
+      end
+      identities([member.id])
+      expect(response.status).to eq(404)
+      put "/isbf/alumni/me.json", params: { city_name: "Beijing" }
+      expect(response.status).to eq(404)
+      put "/isbf/alumni/initial-password.json"
+      expect(response.status).to eq(404)
+    end
+
+    get "/isbf/alumni"
+    expect(response.status).to eq(200)
+    identities([member.id])
+    expect_memberships(member.id.to_s => true)
+  end
+
   it "allows ordinary nonmember viewers" do
     sign_in(viewer)
     identities([member.id, viewer.id])

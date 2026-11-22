@@ -28,6 +28,10 @@ module IsbfAlumni
   VISIBLE_FIELD = "isbf_alumni_visible"
 
   class << self
+    def ensure_workbench_available!
+      ::IsbfWorkbenchMaintenance.ensure_available!(:alumni) if defined?(::IsbfWorkbenchMaintenance)
+    end
+
     def enabled?
       SiteSetting.isbf_alumni_enabled
     end

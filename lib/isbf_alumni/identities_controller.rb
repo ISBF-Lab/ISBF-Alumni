@@ -7,6 +7,7 @@ module IsbfAlumni
 
     wrap_parameters false
     requires_plugin "isbf-alumni"
+    prepend_before_action { IsbfAlumni.ensure_workbench_available! }
     before_action :set_private_headers
     before_action :ensure_available!
 

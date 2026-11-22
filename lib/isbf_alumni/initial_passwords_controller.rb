@@ -4,6 +4,7 @@ module IsbfAlumni
   class InitialPasswordsController < ::ApplicationController
     requires_plugin "isbf-alumni"
     requires_login
+    prepend_before_action { IsbfAlumni.ensure_workbench_available! }
 
     def update
       raise Discourse::InvalidAccess unless IsbfAlumni.available? &&
